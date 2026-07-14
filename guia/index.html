@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StickShift — câmbio de menu-bar pro Claude Code e Codex</title>
+<meta name="description" content="StickShift é um app de menu-bar pra macOS que troca o modelo e o effort do Claude Code ou Codex CLI no pane de terminal focado, digitando os mesmos comandos que você digitaria à mão — com um motor fail-closed que só age quando consegue provar cada passo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c10; --bg2:#14141b; --card:#16161e; --line:#272730;
+    --txt:#e9e9ee; --mut:#9a9aa6; --amb:#E2A23B; --amb2:#f0c070; --sky:#38bdf8; --pro:#cbd5e1;
+    color-scheme:dark;
+  }
+  body.light{
+    --bg:#f6f7f9; --bg2:#eceef2; --card:#ffffff; --line:#e1e3ea;
+    --txt:#1a1a22; --mut:#5b5b68; --amb:#b9791d; --amb2:#a16207; --sky:#0369a1; --pro:#b45309;
+    color-scheme:light;
+  }
+  body.light .hero .glow{opacity:.5}
+  body.light pre{background:#0e0e14;color:#d6d6e0}
+  body.light pre .c{color:#8a8a98}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:Sora,sans-serif;line-height:1.15;margin:0}
+  a{color:var(--amb);text-decoration:none}
+  code,pre{font-family:"JetBrains Mono",monospace}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+  .mut{color:var(--mut)} .amb{color:var(--amb)}
+  .chip{display:inline-block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amb);font-weight:600;font-family:Sora}
+  nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);background:rgba(12,12,16,.78);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
+  nav .brand{display:flex;align-items:center;gap:8px;font-family:Sora;font-weight:800;letter-spacing:-.02em;color:var(--amb)}
+  nav .brand .emoji{font-size:1.25rem}
+  nav .sep{color:var(--mut);opacity:.45}
+  nav .inema{color:var(--sky);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .inema:hover{filter:brightness(1.15)}
+  nav .pro{color:var(--pro);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .pro:hover{filter:brightness(1.15)}
+  nav .clubpro{display:inline-flex;align-items:center;gap:6px}
+  nav .links{margin-left:auto;display:flex;align-items:center;gap:20px;font-size:.92rem}
+  nav .links a.sec{color:var(--mut)} nav .links a.sec:hover{color:var(--txt)}
+  .tgl{background:var(--bg2);border:1px solid var(--line);color:var(--txt);width:38px;height:38px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem}
+  .tgl:hover{border-color:var(--amb)}
+  .btn{display:inline-block;background:var(--amb);color:#1a1206;font-weight:600;padding:.6em 1.05em;border-radius:10px;font-family:Sora}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  @media(max-width:900px){nav .links a.sec{display:none}}
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .hero .glow{position:absolute;inset:-40% -20% auto auto;width:70%;height:600px;background:radial-gradient(closest-side,rgba(226,162,59,.22),transparent 70%);pointer-events:none}
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:74px 22px}
+  .hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.025em}
+  .hero p.lead{font-size:1.18rem;color:var(--mut);margin:1.1em 0 1.6em;max-width:38ch}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero figure{margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000}
+  .hero figure img{width:100%;display:block}
+  @media(max-width:780px){.hero .wrap{grid-template-columns:1fr;padding:48px 22px}}
+  section{padding:62px 0;border-bottom:1px solid var(--line)}
+  section h2{font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:800;letter-spacing:-.02em}
+  section .sub{color:var(--mut);margin:.6em 0 2em;max-width:66ch}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:820px){.g3,.g4{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card h3{font-size:1.05rem;margin-bottom:.4em}
+  .card p{color:var(--mut);font-size:.92rem;margin:0}
+  .card.warn{border-color:rgba(226,162,59,.5);background:linear-gradient(180deg,rgba(226,162,59,.08),transparent)}
+  .num{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:8px;background:rgba(226,162,59,.14);color:var(--amb);font-family:Sora;font-weight:800;font-size:.9rem;margin-bottom:.7em}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .flow span{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:.45em .9em;font-size:.85rem;font-family:Sora;font-weight:600}
+  .flow .arr{color:var(--amb);border:none;background:none;padding:0 .1em}
+  pre{background:#0a0a0e;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font-size:.86rem;line-height:1.6;color:#d6d6e0}
+  pre .c{color:#6f6f7c} pre .k{color:var(--amb2)} pre .s{color:#9ece6a}
+  .step{display:grid;grid-template-columns:46px 1fr;gap:16px;margin-bottom:26px}
+  .step .b{width:46px;height:46px;border-radius:12px;background:var(--amb);color:#1a1206;font-family:Sora;font-weight:800;font-size:1.25rem;display:flex;align-items:center;justify-content:center}
+  .step h3{font-size:1.12rem;margin-bottom:.3em}
+  .step p{color:var(--mut);margin:.2em 0 .7em}
+  .ex{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:680px){.ex{grid-template-columns:1fr}}
+  .ex figure{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff}
+  .ex figure img{width:100%;display:block}
+  .ex figcaption{padding:12px 14px;font-size:.88rem;color:var(--mut);background:var(--card)}
+  .phase{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .phase:last-child{border:none}
+  .phase .tag{flex:0 0 92px;font-family:Sora;font-weight:800;color:var(--amb)}
+  .phase .d strong{display:block;margin-bottom:.2em}
+  .phase .d span{color:var(--mut);font-size:.92rem}
+  footer{padding:46px 0;text-align:center;color:var(--mut);font-size:.9rem}
+  .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
+  table.codes{width:100%;border-collapse:collapse;font-size:.85rem}
+  table.codes th,table.codes td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  table.codes th{color:var(--mut);font-family:Sora;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+  table.codes td:first-child{font-family:"JetBrains Mono",monospace;color:var(--amb2);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="#top"><span class="emoji">⚙️</span> StickShift</a>
+  <span class="sep">|</span>
+  <span class="clubpro">
+    <a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
+    <span class="sep">-</span>
+    <a class="pro" href="https://inema.pro" target="_blank" rel="noopener">PRO</a>
+  </span>
+  <div class="links">
+    <a class="sec" href="#oque">O que é</a>
+    <a class="sec" href="#fluxo">Como funciona</a>
+    <a class="sec" href="#guia">Guia de uso</a>
+    <a class="sec" href="#windows">Windows</a>
+    <a class="sec" href="#roadmap">Roadmap</a>
+    <button class="tgl" id="themeToggle" aria-label="Alternar tema" title="Alternar tema">🌙</button>
+    <a class="btn" href="https://github.com/earlyaidopters/stickshift" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</div></nav>
+
+<header class="hero" id="top">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div>
+      <span class="chip">macOS · Claude Code &amp; Codex</span>
+      <h1>Puxe a marcha, o <span class="amb">modelo</span> muda</h1>
+      <p class="lead">StickShift é um painel de menu-bar em macOS com um H-pattern de câmbio de verdade: puxe o
+      manche pra trocar o modelo do Claude Code ou Codex na pane de terminal que você está olhando, arraste o
+      acelerador pra trocar o effort. Tudo é provado antes de agir — ou recusa com um motivo, nunca digita às cegas.</p>
+      <div class="cta">
+        <a class="btn" href="#guia">Começar o guia</a>
+        <a class="btn ghost" href="https://github.com/earlyaidopters/stickshift" target="_blank" rel="noopener">Ver no GitHub</a>
+      </div>
+    </div>
+    <figure><img src="assets/hero.jpg" alt="Painel do StickShift: gate H-pattern, console LCD e alavanca de effort"></figure>
+  </div>
+</header>
+
+<section id="oque"><div class="wrap">
+  <span class="chip">O que é</span>
+  <h2>Um câmbio de verdade pro seu agente de código</h2>
+  <p class="sub">Nada de editar config na mão ou decorar comando: StickShift lê a pane pela Accessibility API do
+  macOS, prova que é um agente local idle e digita exatamente o que você digitaria — <code>/model</code>,
+  <code>/effort</code>, ou as teclas do picker do Codex.</p>
+  <div class="grid g3">
+    <div class="card"><h3>🔒 Fail-closed de verdade</h3><p>Nunca edita arquivo de config, nunca chama API de
+    provider, nunca usa automação de terminal. Só digita depois de provar pane idle, processo local certo e
+    binário assinado e qualificado — qualquer prova que falhar vira recusa com código de motivo.</p></div>
+    <div class="card"><h3>🎛️ Um painel pra cada provider</h3><p>Face Claude (throttle até ULTRACODE) e face Codex
+    (throttle até ULTRA), com os labels exatos de cada provider e atalhos globais
+    (Cmd+Shift+1..5, Cmd+Shift+R) que disparam a marcha sem nem abrir o painel.</p></div>
+    <div class="card"><h3>🖥️ App + CLI</h3><p><code>bin/shift</code> faz dry-run por padrão (não digita nada);
+    <code>--commit</code> executa de fato. <code>shift doctor</code> diagnostica permissão, config e atribuição
+    da pane focada num comando só.</p></div>
+  </div>
+</div></section>
+
+<section id="fluxo"><div class="wrap">
+  <span class="chip">Como funciona</span>
+  <h2>Anatomia de uma troca</h2>
+  <p class="sub">Entre puxar a marcha e o toast <strong>CHANGED</strong>, o motor passa por uma cadeia de provas —
+  qualquer elo que falhar interrompe a troca e devolve um código de motivo em vez de um keystroke.</p>
+  <div class="flow">
+    <span>1. Read</span><span class="arr">→</span>
+    <span>2. Classify</span><span class="arr">→</span>
+    <span>3. Attribute</span><span class="arr">→</span>
+    <span>4. Qualify</span><span class="arr">→</span>
+    <span>5. Plan</span><span class="arr">→</span>
+    <span>6. Precheck</span><span class="arr">→</span>
+    <span>7. Inject</span><span class="arr">→</span>
+    <span>8. Watch/Verify</span><span class="arr">→</span>
+    <span>9. Report</span>
+  </div>
+  <div class="grid g3" style="margin-top:24px">
+    <div class="card"><h3>Ler + classificar</h3><p>A pane focada é lida via Accessibility API; um classificador puro
+    extrai agente, modelo, effort, cwd, e se está idle/busy/com diálogo aberto, com composer provadamente vazio.</p></div>
+    <div class="card"><h3>Atribuir + qualificar</h3><p>A pane é ligada a um processo local (tty → foreground group →
+    cwd), e o binário atribuído tem assinatura, team e versão checados contra o manifesto.</p></div>
+    <div class="card"><h3>Injetar + verificar</h3><p>Digita com keycodes resolvidos pelo layout atual, prova a
+    entrega por delta de ocorrência antes de qualquer Enter, e só reporta sucesso com verdicto ancorado no fim da pane.</p></div>
+  </div>
+</div></section>
+
+<section id="pre"><div class="wrap">
+  <span class="chip">Pré-requisitos</span>
+  <h2>Antes de instalar</h2>
+  <p class="sub">O caminho automático (<code>setup.sh</code>) cobre quase tudo; isso aqui é o que precisa existir
+  na máquina antes.</p>
+  <div class="grid g3">
+    <div class="card"><h3>macOS + Xcode CLT</h3><p>Precisa do <code>clang</code> pra compilar.</p>
+    <pre><span class="c"># instala as command line tools se faltar</span>
+xcode-select --install</pre></div>
+    <div class="card"><h3>Terminal suportado</h3><p>Warp é o default verificado ponta a ponta. Terminal.app já
+    passou nos dois testes mais difíceis; outros terminais se qualificam em 4 passos.</p>
+    <pre><span class="c"># qualifica um terminal novo</span>
+./scripts/qualify-terminal.sh "iTerm"</pre></div>
+    <div class="card"><h3>Accessibility</h3><p>StickShift pede a permissão sozinho no primeiro lançamento — é só
+    conceder em System Settings quando o diálogo aparecer.</p>
+    <pre><span class="c"># confirma o que está concedido</span>
+./bin/shift doctor</pre></div>
+  </div>
+</div></section>
+
+<section id="guia"><div class="wrap">
+  <span class="chip">Guia de uso · passo a passo</span>
+  <h2>Instalar e trocar sua primeira marcha</h2>
+  <p class="sub">O script é idempotente: roda de novo sem medo se algo falhar no meio.</p>
+
+  <div class="step"><div class="b">1</div><div>
+    <h3>Clone e rode o setup</h3>
+    <p>Verifica pré-requisitos, cria a identidade de assinatura estável, builda, roda a suíte de testes inteira,
+    instala em <code>~/Applications/StickShift.app</code> e já abre o app.</p>
+<pre><span class="k">git clone https://github.com/earlyaidopters/stickshift && cd stickshift</span>  <span class="c"># baixa o repo</span>
+<span class="k">./scripts/setup.sh</span>  <span class="c"># idempotente, instala tudo</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">2</div><div>
+    <h3>Conceda Accessibility e reabra o app uma vez</h3>
+    <p>Habilite o StickShift em System Settings → Privacy & Security → Accessibility. Depois <strong>saia e
+    abra o app de novo</strong> (clique direito no gear do menu-bar → Quit → reabra) — a permissão só gruda no
+    processo depois do relaunch, esse é o erro de suporte nº 1.</p>
+  </div></div>
+
+  <div class="step"><div class="b">3</div><div>
+    <h3>Foque uma pane com Claude Code ou Codex e puxe uma marcha</h3>
+    <p>Clique no pane do terminal rodando o agente, arraste o manche até um gate (ou dispare pela CLI a partir de
+    <em>outro</em> pane — a CLI recusa a própria pane como <code>SELF_TARGET</code>).</p>
+<pre><span class="k">./bin/shift 4</span>          <span class="c"># dry run: mostra o plano, não digita nada</span>
+<span class="k">./bin/shift 4 --commit</span> <span class="c"># executa de verdade</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">4</div><div>
+    <h3>Confira o log</h3>
+    <p><code>CHANGED</code> quer dizer que deu certo; qualquer outro código é uma recusa explicada — cada
+    tentativa fica registrada com motivo, nunca com o conteúdo da pane.</p>
+<pre><span class="k">tail -5 ~/.stickshift/log</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">5</div><div>
+    <h3>Ou pule a leitura: deixe o próprio agente instalar</h3>
+    <p>Aponte Claude Code, Codex, ou qualquer agente de código pra este repo e diga
+    <strong>"set up StickShift on this Mac"</strong>. O <code>AGENTS.md</code> do repo é o playbook operacional
+    completo: instalação, adaptação a terminal e versão de agente, e debug de recusa por código de motivo.</p>
+  </div></div>
+</div></section>
+
+<section id="windows"><div class="wrap">
+  <span class="chip">⚠️ Se você está no Windows</span>
+  <h2>StickShift ainda não roda no Windows</h2>
+  <p class="sub">O motor é construído sobre três pilares específicos de macOS — leitura de pane via Accessibility
+  API, injeção de tecla via CGEvent e permissões TCC — e nenhum dos três existe do mesmo jeito no Windows. Isso
+  não é uma limitação de descuido: é uma escolha documentada, com o mapa completo de portabilidade já escrito no
+  próprio repositório.</p>
+  <div class="grid g2">
+    <div class="card warn">
+      <h3>📖 Passo 1 — leia o README e o AGENTS.md</h3>
+      <p>O <code>README.md</code> documenta cada invariante de segurança (por que o painel nunca pode virar
+      key window, por que a entrega precisa de prova por delta de ocorrência, etc.) e o <code>docs/WINDOWS.md</code>
+      já traz a avaliação completa de porte: o que aproveita sem mudar (o classificador de pane, os planos de
+      protocolo, a máquina de estados — tudo funções puras sobre strings), o que precisa ser reconstruído
+      (UI Automation no lugar de Accessibility, <code>SendInput</code> no lugar de CGEvent, atribuição de pane
+      via árvore UIA do Windows Terminal no lugar de tty/processo do macOS) e a ordem de spikes que reduz o
+      risco mais rápido.</p>
+    </div>
+    <div class="card warn">
+      <h3>🤖 Passo 2 — peça pro seu próprio agente fazer a engenharia reversa</h3>
+      <p>Com o repo clonado no Windows, abra seu agente de código (Claude Code, Codex, ou outro) e peça pra ele
+      ler <code>README.md</code>, <code>AGENTS.md</code> e <code>docs/WINDOWS.md</code>, fazer a engenharia
+      reversa da lógica (o classificador em <code>src/core/AXState.m</code>, o motor de estados em
+      <code>src/core/Switch.m</code>, os planos em <code>src/core/Protocol.m</code>) e construir uma versão
+      adaptada pra Windows a partir daí — trocando UIA + SendInput no lugar das APIs de macOS, seguindo a ordem
+      de spikes sugerida no próprio <code>docs/WINDOWS.md</code>.</p>
+    </div>
+  </div>
+</div></section>
+
+<section id="exemplos"><div class="wrap">
+  <span class="chip">Exemplos</span>
+  <h2>Os diagramas que o próprio projeto usa</h2>
+  <p class="sub">Direto de <code>docs/</code>: a anatomia de uma troca e o mapa de código-fonte, do jeito que
+  acompanham o README.</p>
+  <div class="ex">
+    <figure><img src="assets/ex1-pipeline.svg" alt="Diagrama do pipeline: Read → Classify → Attribute → Qualify → Plan → Precheck → Inject → Watch/Verify → Report"><figcaption>Anatomia de uma troca — as 9 etapas entre puxar a marcha e o toast CHANGED.</figcaption></figure>
+    <figure><img src="assets/ex2-architecture.svg" alt="Diagrama de arquitetura do código-fonte do StickShift"><figcaption>Mapa de arquitetura — engine em src/core, app shell em src/app, CLI em src/cli.</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="roadmap"><div class="wrap">
+  <span class="chip">Roadmap</span>
+  <h2>Onde está e pra onde vai</h2>
+  <p class="sub">Do jeito que o próprio README documenta hoje.</p>
+  <div class="phase"><div class="tag">Hoje</div><div class="d"><strong>Warp verificado ponta a ponta</strong><span>Terminal.app com leitura + injeção verificadas; iTerm2 ainda não qualificado. Só Warp habilitado por padrão.</span></div></div>
+  <div class="phase"><div class="tag">Próximo</div><div class="d"><strong>Mais terminais + identidade de pane mais forte</strong><span>Qualificar iTerm2 e outros via <code>scripts/qualify-terminal.sh</code>; reduzir a ambiguidade que hoje depende de título de janela + geometria + cwd.</span></div></div>
+  <div class="phase"><div class="tag">Distribuição</div><div class="d"><strong>Developer ID + notarização</strong><span>A identidade auto-assinada resolve o treadmill do TCC localmente; distribuir além da própria máquina pede um Developer ID pago.</span></div></div>
+  <div class="phase"><div class="tag">Windows</div><div class="d"><strong>Porte documentado, não iniciado</strong><span>Classificador, protocolo e máquina de estados portam quase sem mudança; o spike crítico é a leitura de texto via UIA no Windows Terminal. Mapa completo em <code>docs/WINDOWS.md</code>.</span></div></div>
+</div></section>
+
+<footer>
+  <div class="wrap">
+    <div class="pill">Objective-C</div><div class="pill">AppKit + WKWebView</div><div class="pill">Accessibility API</div><div class="pill">CGEvent</div>
+    <p style="margin-top:18px">StickShift · menu-bar gearbox pro Claude Code e Codex ·
+      <a href="https://github.com/earlyaidopters/stickshift">earlyaidopters/stickshift</a> ·
+      <a href="https://inema.club">INEMA.CLUB</a></p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var KEY='stickshift-theme';
+    var b=document.body, t=document.getElementById('themeToggle');
+    if(localStorage.getItem(KEY)==='light'){ b.classList.add('light'); t.textContent='☀️'; }
+    t.addEventListener('click',function(){
+      var light=b.classList.toggle('light');
+      t.textContent=light?'☀️':'🌙';
+      localStorage.setItem(KEY, light?'light':'dark');
+    });
+  })();
+</script>
+</body>
+</html>
