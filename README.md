@@ -315,13 +315,16 @@ Default gear map (remap in `~/.stickshift/config.toml`; see `docs/config.md`):
 
 | Gear  | Claude Code            | Codex                  |
 |-------|------------------------|------------------------|
-| 1     | Haiku 4.5              | gpt-5.4-mini           |
-| 2     | Sonnet 5               | gpt-5.6-luna           |
-| 3     | Opus 4.8 (default)     | gpt-5.6-terra          |
-| 4     | Fable 5 · high         | gpt-5.6-sol · high     |
-| 5     | Fable 5 · max          | gpt-5.6-sol · max      |
-| R     | default · auto         | gpt-5.6-sol · low      |
-| ULTRA | Fable 5 · ultracode    | gpt-5.6-sol · ultra    |
+| 1     | Haiku 4.5              | gpt-6-luna · medium    |
+| 2     | Sonnet 5               | gpt-6-sol · medium     |
+| 3     | Opus 5.5 · medium      | gpt-6-astra · medium   |
+| 4     | Opus 5.5 · high        | gpt-6-astra · high     |
+| 5     | Opus 5.5 · xhigh       | gpt-6-astra · xhigh    |
+| R     | Opus 5.5 · low         | gpt-6-sol · low        |
+| ULTRA | Opus 5.5 · ultracode   | gpt-6-astra · ultra    |
+
+The Claude ladder follows medium as the working gear, high when a task needs more
+reasoning, xhigh for the hard cases; `max` is left to remaps.
 
 The UI's stick + throttle can also fire any explicit (model, effort) combination
 directly, independent of the gear map.
@@ -340,6 +343,37 @@ ships at `docs/config.example.toml`):
   rejected. A rejected config never silently falls back to permissive defaults: the
   app logs the rejection, disables shifts (`BAD_CONFIG`), and tells you to fix or
   delete the file. `STICKSHIFT_CONFIG` overrides the path (used by tests).
+
+### Models are data: the model catalog
+
+Which models exist, how each one is named on screen, and which efforts it accepts live
+in ONE place, the model catalog (`src/core/Models.m`). The planner, the pane
+classifier, the gearbox gates/throttle and the qualification check all read from it.
+Built-in defaults were read from Claude Code 2.1.282 and Codex 0.156.1 on 2026-09-24:
+
+| Agent  | Catalog (gate order)                                                              |
+|--------|-----------------------------------------------------------------------------------|
+| Claude | `haiku` Haiku 4.5 · `sonnet` Sonnet 5 · `opus` Opus 5.5 · `fable` Fable 5.1         |
+| Codex  | gpt-6-luna · gpt-6-sol · gpt-6-astra · gpt-5.6-sol · gpt-5.6-terra · gpt-5.5 (+ gpt-5.6-luna, gpt-5.4, gpt-5.4-mini as remap targets) |
+
+A new model is a config edit, not a recompile:
+
+```toml
+claude_model.opus = "Opus 5.6"                           # token = /model arg, value = status-line name
+codex_model.gpt-7-nova = "low medium high xhigh max"     # label = picker label, value = its efforts
+gear.3.claude = "opus medium"
+```
+
+Status-line names are matched with a token boundary: "Opus 5.5 (1M context)" counts as
+Opus 5.5, but "Opus 5" never counts as "Opus 5.5" and "Fable 5" never counts as
+"Fable 5.1". Codex efforts are enforced per model (no `ultra` on luna, no `max` on
+gpt-5.5). `default` is deliberately not in the catalog: it resolves per account, so a
+gear on it could never be verified.
+
+**2026-09-24 catalog change: not yet compiled or run on a Mac.** Before trusting it:
+`make test`, `make matrix`, `stickshift doctor`, then `stickshift status` in a pane
+running each agent to confirm the on-screen names, and a dry run (`stickshift 3`)
+before any `--commit`.
 
 ## Supported terminals
 

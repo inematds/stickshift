@@ -10,6 +10,7 @@
 #import "Protocol.h"
 #import "AXState.h"
 #import "Inject.h"
+#import "Models.h"
 
 static int bad = 0;
 static void req(BOOL ok, NSString *what) {
@@ -64,12 +65,15 @@ int main(void) { @autoreleasepool {
         printf("NOTE: neither agent found; matrix still validates plans + typeability.\n");
 
     printf("\n== full UI matrix ==\n");
-    NSDictionary *claudeM = @{@"haiku":@"Haiku 4.5", @"sonnet":@"Sonnet 5",
-                              @"default":@"Opus 4.8", @"fable":@"Fable 5"};
+    // Everything the gearbox can target comes from the model catalog (defaults +
+    // ~/.stickshift/config.toml), so the matrix walks the catalog, not a copy of it.
+    [Config load];
+    ModelCatalog *cat = [ModelCatalog current];
+    NSMutableDictionary *claudeM = [NSMutableDictionary dictionary];
+    for (ModelEntry *e in [cat entriesForKind:AgentClaude]) claudeM[e.token] = e.display;
     NSArray *claudeE = @[@"low",@"medium",@"high",@"xhigh",@"max",@"ultracode"];
-    NSArray *codexM = @[@"gpt-5.4-mini",@"gpt-5.4",@"gpt-5.5",
-                        @"gpt-5.6-luna",@"gpt-5.6-terra",@"gpt-5.6-sol"];
-    NSArray *codexE = @[@"low",@"medium",@"high",@"xhigh",@"max"];
+    NSMutableArray *codexM = [NSMutableArray array];
+    for (ModelEntry *e in [cat entriesForKind:AgentCodex]) [codexM addObject:e.token];
     int combos = 0;
 
     for (NSString *m in claudeM) for (NSString *e in [claudeE arrayByAddingObject:@""]) {
@@ -88,8 +92,7 @@ int main(void) { @autoreleasepool {
         combos++;
     }
     for (NSString *m in codexM) {
-        NSArray *effs = [m isEqualToString:@"gpt-5.6-sol"]
-            ? [codexE arrayByAddingObject:@"ultra"] : codexE;
+        NSArray *effs = [cat effortsForKind:AgentCodex token:m];
         for (NSString *e in [effs arrayByAddingObject:@""]) {
             NSString *eff = e.length ? e : nil;
             req([[Manifest shared] isTupleQualifiedForKind:AgentCodex model:m effort:eff],

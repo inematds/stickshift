@@ -26,15 +26,20 @@ static GearTuple *T(NSString *model, NSString *effort) {
 
 - (void)installDefaults {
     // From spike 7. Claude models are inline /model args; Codex models are picker labels.
+    // 2026-09-24 defaults (Claude Code 2.1.282, Codex 0.156.1). The effort ladder
+    // follows the effort reference in inematds/modelos (guia/esforco): medium as the
+    // working gear, high when more reasoning is needed, xhigh for the hard cases; max
+    // is left to remaps because it cost more without paying off in either test.
     _gears = @{
-      @"1":     @{@"claude": T(@"haiku", nil),   @"codex": T(@"gpt-5.4-mini", @"medium")},
-      @"2":     @{@"claude": T(@"sonnet", nil),  @"codex": T(@"gpt-5.6-luna", @"medium")},
-      @"3":     @{@"claude": T(@"default", nil), @"codex": T(@"gpt-5.6-terra", @"medium")},
-      @"4":     @{@"claude": T(@"fable", @"high"),@"codex": T(@"gpt-5.6-sol", @"high")},
-      @"5":     @{@"claude": T(@"fable", @"max"), @"codex": T(@"gpt-5.6-sol", @"max")},
-      @"R":     @{@"claude": T(@"default", @"auto"), @"codex": T(@"gpt-5.6-sol", @"low")},
-      @"ULTRA": @{@"claude": T(@"fable", @"ultracode"), @"codex": T(@"gpt-5.6-sol", @"ultra")},
+      @"1":     @{@"claude": T(@"haiku", nil),        @"codex": T(@"gpt-6-luna", @"medium")},
+      @"2":     @{@"claude": T(@"sonnet", nil),       @"codex": T(@"gpt-6-sol", @"medium")},
+      @"3":     @{@"claude": T(@"opus", @"medium"),   @"codex": T(@"gpt-6-astra", @"medium")},
+      @"4":     @{@"claude": T(@"opus", @"high"),     @"codex": T(@"gpt-6-astra", @"high")},
+      @"5":     @{@"claude": T(@"opus", @"xhigh"),    @"codex": T(@"gpt-6-astra", @"xhigh")},
+      @"R":     @{@"claude": T(@"opus", @"low"),      @"codex": T(@"gpt-6-sol", @"low")},
+      @"ULTRA": @{@"claude": T(@"opus", @"ultracode"), @"codex": T(@"gpt-6-astra", @"ultra")},
     };
+    self.catalog = [ModelCatalog defaults];
     self.dialogPolicy = DialogAsk;
     self.autoAnswerEnabled = NO;
     // v1 ships Warp only — the one terminal verified end-to-end. Terminal.app needs its
@@ -65,6 +70,7 @@ static GearTuple *T(NSString *model, NSString *effort) {
 + (instancetype)defaults {
     Config *c = [Config new];
     [c installDefaults];
+    [ModelCatalog setCurrent:c.catalog];
     return c;
 }
 
@@ -72,6 +78,7 @@ static GearTuple *T(NSString *model, NSString *effort) {
     Config *c = [Config new];
     [c installDefaults];
     NSString *path = [self configPath];
+    [ModelCatalog setCurrent:c.catalog];     // defaults until the file overlay succeeds
     if (![[NSFileManager defaultManager] fileExistsAtPath:path]) { c.loadedFromFile = NO; return c; }
     NSString *ferr = nil;
     if (![self fileIsSafe:path error:&ferr]) {
@@ -86,6 +93,7 @@ static GearTuple *T(NSString *model, NSString *effort) {
     if (!txt) { c.malformed = YES; c.loadError = @"unreadable"; return c; }
     [c applyToml:txt];
     c.loadedFromFile = YES;
+    [ModelCatalog setCurrent:c.catalog];
     return c;
 }
 
@@ -144,6 +152,9 @@ static GearTuple *T(NSString *model, NSString *effort) {
             else self.dialogPolicy = DialogAsk;
         } else if ([k isEqualToString:@"auto_answer"]) {
             self.autoAnswerEnabled = [unq isEqualToString:@"true"];
+        } else if ([self.catalog applyKey:k value:unq]) {
+            // claude_model.<token> / codex_model.<label>: handled (or safely ignored)
+            // by the catalog. Must run before the gear branch; see Models.h.
         } else if ([k hasPrefix:@"gear."]) {
             // gear.<G>.<claude|codex> = "model" or "model effort"
             // e.g.  gear.4.claude = "fable high"   gear.ULTRA.codex = "gpt-5.6-sol ultra"

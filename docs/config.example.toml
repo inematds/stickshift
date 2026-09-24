@@ -16,8 +16,14 @@ auto_answer = true
 enabled_terminals = ["dev.warp.Warp-Stable"]
 
 # Gear remaps: gear.<1|2|3|4|5|R|ULTRA>.<claude|codex> = "model" or "model effort"
-# Claude models are /model arguments (haiku, sonnet, default, fable).
-# Codex models are picker labels (gpt-5.4-mini ... gpt-5.6-sol).
+# Claude models are /model arguments (haiku, sonnet, opus, fable).
+# Codex models are picker labels (gpt-6-luna, gpt-6-sol, gpt-6-astra, gpt-5.6-*, gpt-5.5).
 #gear.4.claude = "fable high"
-#gear.5.claude = "fable max"
-#gear.ULTRA.codex = "gpt-5.6-sol ultra"
+#gear.5.claude = "opus max"
+#gear.ULTRA.codex = "gpt-6-sol ultra"
+
+# Model catalog: teach StickShift a new model without recompiling.
+# claude_model.<token> = "<name shown in the status line>"
+# codex_model.<picker label> = "<efforts it accepts>"
+#claude_model.opus = "Opus 5.6"
+#codex_model.gpt-7-nova = "low medium high xhigh max"

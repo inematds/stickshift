@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import "AXState.h"
+#import "Models.h"
 
 // A resolved (model, effort) target for one agent kind.
 @interface GearTuple : NSObject
@@ -16,6 +17,9 @@ typedef NS_ENUM(NSInteger, DialogPolicy) { DialogAsk = 0, DialogConfirm, DialogC
 @property(nonatomic) BOOL loadedFromFile;
 @property(nonatomic) BOOL malformed;
 @property(nonatomic, copy) NSString *loadError;
+// Which models exist, their on-screen names and efforts (defaults + config.toml
+// claude_model.* / codex_model.* lines). Installed as ModelCatalog.current on load.
+@property(nonatomic, strong) ModelCatalog *catalog;
 // gear ("1".."5","R","ULTRA") -> per-agent tuple
 - (GearTuple *)tupleForGear:(NSString *)gear kind:(AgentKind)kind;
 - (NSArray<NSString*> *)allGears;

@@ -6,7 +6,7 @@ FRAMEWORKS = -framework Foundation -framework AppKit -framework ApplicationServi
              -framework ScreenCaptureKit -framework Vision
 CFLAGS = -fobjc-arc -Wall -O2 -Isrc/core
 CORE = src/core/Proc.m src/core/AXState.m src/core/Manifest.m src/core/Inject.m \
-       src/core/Config.m src/core/Attribution.m src/core/Protocol.m src/core/Switch.m
+       src/core/Config.m src/core/Models.m src/core/Attribution.m src/core/Protocol.m src/core/Switch.m
 CLI = src/cli/main.m
 
 APP = src/app/AppDelegate.m src/app/main.m

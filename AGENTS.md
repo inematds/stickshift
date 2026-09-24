@@ -108,10 +108,23 @@ drift symptoms — placeholder rotation and footer format respectively.
 
 ### Different models or gear mappings
 
-The gear map lives in `src/core/Config.m` (`installDefaults`) and can be remapped via
-`config.toml` (see `docs/config.md`). The UI's model lists live in
-`src/app/AppDelegate.m` (`profileJSONForKind:`). Model tokens must pass the
-injection-safe charset (`Config.isInjectionSafe`).
+Models are data (README, "Models are data"). To adapt to a model the user has that
+StickShift does not know yet:
+
+1. Ask the agent for its real names: in Claude Code, `/model` shows the aliases and
+   the status line shows the display name; in Codex, `/model` shows the picker labels
+   (`~/.codex/models_cache.json` also lists each model's supported efforts).
+2. Add it to `~/.stickshift/config.toml`: `claude_model.<token> = "<display>"` or
+   `codex_model.<label> = "<efforts>"`, then point a gear at it (`gear.N.<agent>`).
+3. `stickshift status` in a pane on that model must show the same display name.
+4. `stickshift <gear>` (dry run) must print a plan; only then `--commit`.
+5. To change the built-in defaults instead, edit `ModelCatalog +defaults` in
+   `src/core/Models.m` and `installDefaults` in `src/core/Config.m`, then
+   `make test && make matrix` on a Mac.
+
+The gearbox gates are the first six catalog entries per agent. Tokens must pass the
+injection-safe charset (`Config.isInjectionSafe`); display names must pass
+`ModelCatalog isDisplaySafe` (they reach the web view).
 
 ## Debugging a refusal
 

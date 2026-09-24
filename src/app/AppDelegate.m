@@ -5,6 +5,7 @@
 #import "AXState.h"
 #import "Switch.h"
 #import "Protocol.h"
+#import "Models.h"
 #import "Attribution.h"
 #import "Reason.h"
 
@@ -178,36 +179,40 @@
     return token;
 }
 
-// Static per-provider model list (gate order) + every effort level per model, from the
-// spike-7/8 vocabularies. Each entry carries a display label AND the internal token the
-// injector uses.
+// Per-provider model list (gate order) + every effort level per model, read from the
+// model catalog (src/core/Models.h: built-in defaults + config.toml claude_model.* /
+// codex_model.* lines). Each entry carries a display label AND the internal token the
+// injector uses. Labels are charset-validated by the catalog before they get here.
 - (NSString *)profileJSONForKind:(AgentKind)kind name:(NSString *)name {
-    // models in gate order: 1,2,3,4,5,R (empty slots allowed)
-    NSArray *models = kind == AgentClaude
-      ? @[@[@"haiku",@"Haiku 4.5"], @[@"sonnet",@"Sonnet 5"], @[@"default",@"Opus 4.8"], @[@"fable",@"Fable 5"]]
-      : @[@[@"gpt-5.4-mini",@"gpt-5.4-mini"], @[@"gpt-5.4",@"gpt-5.4"], @[@"gpt-5.5",@"gpt-5.5"],
-          @[@"gpt-5.6-luna",@"gpt-5.6-luna"], @[@"gpt-5.6-terra",@"gpt-5.6-terra"], @[@"gpt-5.6-sol",@"gpt-5.6-sol"]];
+    ModelCatalog *cat = [ModelCatalog current];
+    NSArray<ModelEntry*> *models = [cat entriesForKind:kind];
     NSArray *gates = @[@"1",@"2",@"3",@"4",@"5",@"R"];
     NSMutableString *mjson = [NSMutableString stringWithString:@"["];
     for (NSUInteger i = 0; i < models.count && i < gates.count; i++) {
         [mjson appendFormat:@"{gate:'%@',token:'%@',label:'%@'},", gates[i],
-            [self jsEsc:models[i][0]], [self jsEsc:models[i][1]]];
+            [self jsEsc:models[i].token], [self jsEsc:models[i].display]];
     }
     [mjson appendString:@"]"];
 
-    // efforts: token + provider-exact label. Codex tops out at 'ultra' only on models
-    // that expose it (spike 7: sol has Ultra, luna does not).
-    NSArray *effTokens = kind == AgentClaude
-      ? @[@"low",@"medium",@"high",@"xhigh",@"max",@"ultracode"]
-      : @[@"low",@"medium",@"high",@"xhigh",@"max"]; // base codex set (xhigh renders 'extra high')
+    // Base throttle: Claude shares one list (auto is a CLI-only gear, not a detent);
+    // Codex uses the base list, and each model overrides it with its own efforts.
+    NSMutableArray *effTokens = [[ModelCatalog baseEffortsForKind:kind] mutableCopy];
+    [effTokens removeObject:@"auto"];
     NSMutableString *ejson = [NSMutableString stringWithString:@"["];
     for (NSString *tk in effTokens)
         [ejson appendFormat:@"{token:'%@',label:'%@'},", tk, [self jsEsc:[self uiEffortForKind:kind token:tk]]];
     [ejson appendString:@"]"];
-    // per-model effort overrides (codex sol gains 'ultra')
-    NSString *overrides = kind == AgentCodex
-      ? @"{'gpt-5.6-sol':[{token:'low',label:'low'},{token:'medium',label:'medium'},{token:'high',label:'high'},{token:'xhigh',label:'extra high'},{token:'max',label:'max'},{token:'ultra',label:'ultra'}]}"
-      : @"{}";
+    NSMutableString *overrides = [NSMutableString stringWithString:@"{"];
+    if (kind == AgentCodex) {
+        for (ModelEntry *m in models) {
+            if (!m.efforts.count) continue;
+            [overrides appendFormat:@"'%@':[", [self jsEsc:m.token]];
+            for (NSString *tk in m.efforts)
+                [overrides appendFormat:@"{token:'%@',label:'%@'},", tk, [self jsEsc:[self uiEffortForKind:kind token:tk]]];
+            [overrides appendString:@"],"];
+        }
+    }
+    [overrides appendString:@"}"];
 
     return [NSString stringWithFormat:@"{name:'%@',models:%@,efforts:%@,modelEfforts:%@}",
             [self jsEsc:name], mjson, ejson, overrides];
@@ -239,15 +244,9 @@
     [self.web evaluateJavaScript:js completionHandler:nil];
 }
 
-// Reverse-map a detected model display name back to its injectable token.
+// Reverse-map a detected model display name back to its injectable token (catalog).
 - (NSString *)modelTokenForKind:(AgentKind)kind display:(NSString *)display {
-    if (kind != AgentClaude) return display ?: @"";     // codex: display == token
-    if (!display) return @"";
-    if ([display hasPrefix:@"Haiku"]) return @"haiku";
-    if ([display hasPrefix:@"Sonnet"]) return @"sonnet";
-    if ([display hasPrefix:@"Fable"]) return @"fable";
-    if ([display hasPrefix:@"Opus"]) return @"default";
-    return @"";
+    return [[ModelCatalog current] tokenForKind:kind display:display];
 }
 
 - (NSString *)jsEsc:(NSString *)s {

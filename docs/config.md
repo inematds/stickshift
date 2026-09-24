@@ -33,25 +33,37 @@ enabled_terminals = ["dev.warp.Warp-Stable"]
 
 # Gear remaps: gear.<1|2|3|4|5|R|ULTRA>.<claude|codex> = "model" or "model effort"
 # Both tokens must pass the injection-safe charset below or the line is ignored.
-gear.4.claude = "fable high"
-gear.ULTRA.codex = "gpt-5.6-sol ultra"
+gear.4.claude = "opus high"
+gear.ULTRA.codex = "gpt-6-astra ultra"
+
+# Model catalog overlay (added 2026-09-24). Adds or overrides entries; defaults stay.
+# claude_model.<token> = "<status-line name>"   token: injection-safe charset
+# codex_model.<label>  = "<efforts>"            label: picker label (may contain dots)
+# Display names allow letters, digits, space and . - ( ), max 48 chars. A line with an
+# unsafe token, unsafe name or unknown effort is ignored as a whole (fail closed).
+claude_model.opus = "Opus 5.5"
+codex_model.gpt-6-astra = "low medium high xhigh max ultra"
 ```
 
-## Gears (defaults, from spike 7)
+## Gears (defaults, 2026-09-24)
 
 Gears are tiers resolving to per-agent (model, effort) tuples. Values that become
 keystrokes are validated against a strict charset (`[A-Za-z0-9._\[\]-]`); anything else
-is rejected and never typed.
+is rejected and never typed. Models must exist in the model catalog (README, "Models
+are data") and Codex efforts must be in that model's list, or the plan refuses.
 
-| Gear  | Claude Code            | Codex                    |
-|-------|------------------------|--------------------------|
-| 1     | haiku                  | gpt-5.4-mini (medium)    |
-| 2     | sonnet                 | gpt-5.6-luna (medium)    |
-| 3     | default (Opus 4.8 1M)  | gpt-5.6-terra (medium)   |
-| 4     | fable + /effort high   | gpt-5.6-sol (high)       |
-| 5     | fable + /effort max    | gpt-5.6-sol (max)        |
-| R     | default + /effort auto | gpt-5.6-sol (low)        |
-| ULTRA | fable + /effort ultracode | gpt-5.6-sol (ultra)   |
+| Gear  | Claude Code            | Codex                  |
+|-------|------------------------|------------------------|
+| 1     | Haiku 4.5              | gpt-6-luna · medium    |
+| 2     | Sonnet 5               | gpt-6-sol · medium     |
+| 3     | Opus 5.5 · medium      | gpt-6-astra · medium   |
+| 4     | Opus 5.5 · high        | gpt-6-astra · high     |
+| 5     | Opus 5.5 · xhigh       | gpt-6-astra · xhigh    |
+| R     | Opus 5.5 · low         | gpt-6-sol · low        |
+| ULTRA | Opus 5.5 · ultracode   | gpt-6-astra · ultra    |
+
+Previous defaults (spike 7, Opus 4.8 / Fable 5 / gpt-5.6-*) remain reachable by remap:
+`gear.4.claude = "fable high"`, `gear.2.codex = "gpt-5.6-luna medium"`.
 
 ## Commands
 

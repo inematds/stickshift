@@ -1,4 +1,5 @@
 #import "Manifest.h"
+#import "Models.h"
 #import <Security/Security.h>
 
 @implementation AgentIdentity @end
@@ -17,8 +18,10 @@ static NSString *codeIdForKind(AgentKind k) { return k == AgentClaude ? @"com.an
 
 // Qualified version set (extend as qualification runs add versions).
 static NSSet *qualifiedVersions(AgentKind k) {
-    return k == AgentClaude ? [NSSet setWithArray:@[@"2.1.205"]]
-                            : [NSSet setWithArray:@[@"0.144.1"]];
+    // 2.1.282 / 0.156.1: model names read from these versions on 2026-09-24 (Linux
+    // install) — NOT yet re-qualified on a Mac. Keep until `make matrix` passes there.
+    return k == AgentClaude ? [NSSet setWithArray:@[@"2.1.205", @"2.1.282"]]
+                            : [NSSet setWithArray:@[@"0.144.1", @"0.156.1"]];
 }
 
 - (NSString *)codeSignInfoForPath:(NSString *)path team:(NSString **)outTeam ident:(NSString **)outId {
@@ -118,10 +121,11 @@ static NSSet *qualifiedVersions(AgentKind k) {
         return model.length > 0;
     }
     if (kind == AgentCodex) {
-        // codex effort rows are model-dependent; ultra only on some models. Enforce
-        // the base allowlist here; the picker itself gates model-specific availability.
+        // codex effort rows are model-dependent; the catalog carries each model's list
+        // (ultra only on sol/astra/terra, no max on gpt-5.5). Unknown model -> refuse.
         if (effort && ![codexEfforts containsObject:effort]) return NO;
-        return model.length > 0;
+        if (![[ModelCatalog current] entryForKind:AgentCodex token:model]) return NO;
+        return [[ModelCatalog current] kind:AgentCodex model:model acceptsEffort:effort];
     }
     return NO;
 }

@@ -1,4 +1,5 @@
 #import "Protocol.h"
+#import "Models.h"
 
 @implementation PlanStep @end
 @implementation SwitchPlan @end
@@ -6,28 +7,22 @@
 @implementation ShiftProtocol
 
 // Status-line display name (what "📂 … · <Model>" shows) — used for verification and
-// the no-op check. NOT the longer "(1M context) (default)" form that only the printed
-// "Set model to …" line uses.
+// the no-op check. Comes from the model catalog (Models.h), not a hardcoded table.
 + (NSString *)claudeDisplayForToken:(NSString *)token {
-    NSDictionary *m = @{
-        @"default": @"Opus 4.8",
-        @"opus": @"Opus 4.8",
-        @"sonnet": @"Sonnet 5",
-        @"haiku": @"Haiku 4.5",
-        @"fable": @"Fable 5",
-    };
-    return m[token.lowercaseString] ?: token;
+    return [[ModelCatalog current] claudeDisplayForToken:token.lowercaseString];
 }
 
 static PlanStep *S(StepKind k, NSString *t, NSString *note) {
     PlanStep *s = [PlanStep new]; s.kind = k; s.text = t; s.note = note; return s;
 }
 
-// Codex model picker order (spike 7). Effort order per model (sol has ultra).
+// Codex membership: the model must be in the catalog. The row itself is found by
+// LABEL in the live picker (StepCodexSelect), never by a stored position.
 static int codexModelRow(NSString *model) {
-    NSArray *order = @[@"gpt-5.6-sol", @"gpt-5.6-terra", @"gpt-5.6-luna", @"gpt-5.5", @"gpt-5.4", @"gpt-5.4-mini"];
-    NSUInteger i = [order indexOfObject:model];
-    return i == NSNotFound ? -1 : (int)(i + 1);
+    NSArray *list = [[ModelCatalog current] entriesForKind:AgentCodex];
+    for (NSUInteger i = 0; i < list.count; i++)
+        if ([((ModelEntry *)list[i]).token isEqualToString:model]) return (int)(i + 1);
+    return -1;
 }
 static int codexEffortRow(NSString *effort) {
     NSArray *order = @[@"low", @"medium", @"high", @"xhigh", @"max", @"ultra"];
@@ -88,6 +83,8 @@ static NSString *codexEffortDisplay(NSString *effort) {
         int mRow = codexModelRow(tuple.model);
         int eRow = tuple.effort ? codexEffortRow(tuple.effort) : -1;
         if (mRow < 0) return nil;
+        // Per-model effort gate (gpt-5.5 has no max, luna has no ultra, ...).
+        if (![[ModelCatalog current] kind:AgentCodex model:tuple.model acceptsEffort:tuple.effort]) return nil;
         (void)mRow; (void)eRow;
         [steps addObject:S(StepTypeText, @"/model", @"type /model")];
         [steps addObject:S(StepReturn, nil, @"open popup")];

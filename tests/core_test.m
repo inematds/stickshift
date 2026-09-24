@@ -10,6 +10,7 @@
 #import "Attribution.h"
 #import "Proc.h"
 #import "Inject.h"
+#import "Models.h"
 
 static int failures = 0;
 static void check(BOOL cond, NSString *name) {
@@ -211,13 +212,13 @@ int main(void) {
         GearTuple *g4 = [GearTuple new]; g4.model = @"fable"; g4.effort = @"high";
         SwitchPlan *p4 = [ShiftProtocol planForKind:AgentClaude tuple:g4];
         check(p4 != nil, @"claude fable+high: plan built");
-        check([p4.expectedModelDisplay isEqualToString:@"Fable 5"], @"claude plan: expected display Fable 5");
+        check([p4.expectedModelDisplay isEqualToString:@"Fable 5.1"], @"claude plan: expected display Fable 5.1 (catalog)");
         check(p4.steps.count == 6, @"claude plan: 6 steps (model+effort)");
-        check([p4.evidenceNeedles.firstObject containsString:@"Set model to Fable 5"], @"claude plan: evidence needle");
+        check([p4.evidenceNeedles.firstObject containsString:@"Set model to Fable 5.1"], @"claude plan: evidence needle");
 
         // Effort-only shift: pane already at the target model -> skip /model entirely
         GearTuple *ge = [GearTuple new]; ge.model = @"fable"; ge.effort = @"max";
-        SwitchPlan *pe = [ShiftProtocol planForKind:AgentClaude tuple:ge currentModelDisplay:@"Fable 5"];
+        SwitchPlan *pe = [ShiftProtocol planForKind:AgentClaude tuple:ge currentModelDisplay:@"Fable 5.1"];
         check(pe.steps.count == 3, @"claude effort-only: 3 steps (no /model when pane already at model)");
         check(((PlanStep *)pe.steps.firstObject).kind == StepTypeText
               && [((PlanStep *)pe.steps.firstObject).text isEqualToString:@"/effort max"],
@@ -507,7 +508,7 @@ int main(void) {
             check([guc.model isEqualToString:@"gpt-5.5"] && guc.effort == nil,
                   @"gear.ultra.codex remapped, model-only, case-insensitive gear");
             GearTuple *g4x = [gc tupleForGear:@"4" kind:AgentCodex];
-            check([g4x.model isEqualToString:@"gpt-5.6-sol"],
+            check([g4x.model isEqualToString:@"gpt-6-astra"],
                   @"unsafe remap value ignored (default kept)");
             check([gc tupleForGear:@"1" kind:AgentClaude] != nil, @"untouched gears keep defaults");
             [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
@@ -539,6 +540,85 @@ int main(void) {
                   @"empty list keeps the compiled-in default (fail closed)");
             [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
             unsetenv("STICKSHIFT_CONFIG");
+        }
+
+        printf("\n== model catalog (models are data, not code) ==\n");
+        {
+            [Config defaults];                                   // installs the default catalog
+            ModelCatalog *mc = [ModelCatalog current];
+            check([[ShiftProtocol claudeDisplayForToken:@"opus"] isEqualToString:@"Opus 5.5"],
+                  @"catalog: opus -> Opus 5.5");
+            check([[ShiftProtocol claudeDisplayForToken:@"fable"] isEqualToString:@"Fable 5.1"],
+                  @"catalog: fable -> Fable 5.1");
+            // Status-line normalization: decorations tolerated, longer versions never.
+            check([[mc canonicalClaudeDisplay:@"Opus 5.5 (1M context)"] isEqualToString:@"Opus 5.5"],
+                  @"canonical: 'Opus 5.5 (1M context)' -> Opus 5.5");
+            check([[mc canonicalClaudeDisplay:@"Opus 5.5 (1M context) (default)"] isEqualToString:@"Opus 5.5"],
+                  @"canonical: '(default)' decoration tolerated");
+            check([mc canonicalClaudeDisplay:@"Opus 5"] == nil, @"canonical: 'Opus 5' is NOT Opus 5.5");
+            check([mc canonicalClaudeDisplay:@"Fable 5"] == nil, @"canonical: 'Fable 5' is NOT Fable 5.1");
+            check([mc canonicalClaudeDisplay:@"Opus 5.5.1"] == nil, @"canonical: 'Opus 5.5.1' is NOT Opus 5.5");
+            check(![ModelCatalog display:@"Opus 5.5" matches:@"Opus 5"], @"match: Opus 5.5 vs Opus 5 -> no");
+            check(![ModelCatalog display:@"Fable 5.1" matches:@"Fable 5"], @"match: Fable 5.1 vs Fable 5 -> no");
+            check([ModelCatalog display:@"Opus 5.5 (1M context)" matches:@"Opus 5.5"], @"match: decorated -> yes");
+            NSString *st = @"❯ \n──────\n  📂 proj  ·  Opus 5.5 (1M context)  ▰▰▱▱ 20%              /rc\n";
+            PaneState *ps = [PaneState new]; [AXState classifyText:st into:ps];
+            check([ps.modelText isEqualToString:@"Opus 5.5"], @"classifier: status line normalized to Opus 5.5");
+            check([[mc tokenForKind:AgentClaude display:@"Opus 5.5 (1M context)"] isEqualToString:@"opus"],
+                  @"reverse map: display -> opus");
+            // Codex: membership + per-model effort gate.
+            GearTuple *a = [GearTuple new]; a.model = @"gpt-6-astra"; a.effort = @"ultra";
+            check([ShiftProtocol planForKind:AgentCodex tuple:a] != nil, @"codex: gpt-6-astra/ultra plans");
+            GearTuple *l = [GearTuple new]; l.model = @"gpt-6-luna"; l.effort = @"ultra";
+            check([ShiftProtocol planForKind:AgentCodex tuple:l] == nil, @"codex: gpt-6-luna has no ultra -> refuse");
+            GearTuple *f = [GearTuple new]; f.model = @"gpt-5.5"; f.effort = @"max";
+            check([ShiftProtocol planForKind:AgentCodex tuple:f] == nil, @"codex: gpt-5.5 has no max -> refuse");
+            GearTuple *u = [GearTuple new]; u.model = @"gpt-9-nope"; u.effort = @"low";
+            check([ShiftProtocol planForKind:AgentCodex tuple:u] == nil, @"codex: unknown model -> refuse");
+            check(![[Manifest shared] isTupleQualifiedForKind:AgentCodex model:@"gpt-6-luna" effort:@"ultra"],
+                  @"manifest: per-model effort gate");
+            // Default gears follow the effort reference: opus medium / high / xhigh.
+            Config *dc = [Config defaults];
+            GearTuple *d3 = [dc tupleForGear:@"3" kind:AgentClaude];
+            check([d3.model isEqualToString:@"opus"] && [d3.effort isEqualToString:@"medium"],
+                  @"default gear 3 = opus/medium");
+            GearTuple *d5x = [dc tupleForGear:@"5" kind:AgentCodex];
+            check([d5x.model isEqualToString:@"gpt-6-astra"] && [d5x.effort isEqualToString:@"xhigh"],
+                  @"default gear 5 codex = gpt-6-astra/xhigh");
+            for (NSString *g in [dc allGears]) for (NSNumber *k in @[@(AgentClaude), @(AgentCodex)]) {
+                GearTuple *t = [dc tupleForGear:g kind:(AgentKind)k.integerValue];
+                check([ShiftProtocol planForKind:(AgentKind)k.integerValue tuple:t] != nil,
+                      ([NSString stringWithFormat:@"default gear %@/%@ builds a plan", g, k.integerValue == AgentClaude ? @"claude" : @"codex"]));
+            }
+            // config.toml overlay: add, override, and reject.
+            NSString *tmp = [NSTemporaryDirectory() stringByAppendingPathComponent:
+                             [NSString stringWithFormat:@"ss-models-%d.toml", getpid()]];
+            setenv("STICKSHIFT_CONFIG", tmp.fileSystemRepresentation, 1);
+            [@"claude_model.opus = \"Opus 5.6\"\n"                    // override display
+             @"claude_model.mythos = \"Mythos 1\"\n"                  // new model appended
+             @"claude_model.evil = \"x');alert(1)//\"\n"             // unsafe display -> ignored
+             @"claude_model.bad;tok = \"Bad\"\n"                     // unsafe token -> ignored
+             @"codex_model.gpt-7-nova = \"low medium high xhigh\"\n" // dotted label, prefix-parsed
+             @"codex_model.gpt-7-bad = \"low turbo\"\n"              // unknown effort -> ignored
+             @"gear.3.claude = \"mythos high\"\n"
+              writeToFile:tmp atomically:YES encoding:NSUTF8StringEncoding error:nil];
+            [[NSFileManager defaultManager] setAttributes:@{NSFilePosixPermissions:@(0600)} ofItemAtPath:tmp error:nil];
+            Config *oc = [Config load];
+            ModelCatalog *oc_m = [ModelCatalog current];
+            check(oc_m == oc.catalog, @"overlay: loaded catalog becomes current");
+            check([[ShiftProtocol claudeDisplayForToken:@"opus"] isEqualToString:@"Opus 5.6"], @"overlay: display override");
+            check([[ShiftProtocol claudeDisplayForToken:@"mythos"] isEqualToString:@"Mythos 1"], @"overlay: new claude model");
+            check([oc_m entryForKind:AgentClaude token:@"evil"] == nil, @"overlay: unsafe display ignored");
+            check([oc_m entryForKind:AgentClaude token:@"bad;tok"] == nil, @"overlay: unsafe token ignored");
+            check([oc_m entryForKind:AgentCodex token:@"gpt-7-nova"] != nil, @"overlay: dotted codex label accepted");
+            check([oc_m entryForKind:AgentCodex token:@"gpt-7-bad"] == nil, @"overlay: unknown effort rejects the line");
+            GearTuple *n = [GearTuple new]; n.model = @"gpt-7-nova"; n.effort = @"max";
+            check([ShiftProtocol planForKind:AgentCodex tuple:n] == nil, @"overlay: per-model efforts enforced");
+            GearTuple *g3 = [oc tupleForGear:@"3" kind:AgentClaude];
+            check([g3.model isEqualToString:@"mythos"], @"overlay: gear can target a config-added model");
+            [[NSFileManager defaultManager] removeItemAtPath:tmp error:nil];
+            unsetenv("STICKSHIFT_CONFIG");
+            [Config defaults];                                   // restore default catalog
         }
 
         printf("\n== manifest: version lookup across npm layouts ==\n");

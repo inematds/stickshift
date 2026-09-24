@@ -1,4 +1,5 @@
 #import "AXState.h"
+#import "Models.h"
 #import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
 #ifndef kAXSuccess
@@ -33,11 +34,6 @@ static CGRect axFrame(AXUIElementRef el) {
     return out;
 }
 
-// Known display strings.
-static NSArray<NSString*> *claudeModels(void) {
-    return @[@"Opus 4.8 (1M context) (default)", @"Opus 4.8 (1M context)", @"Opus 4.8",
-             @"Fable 5", @"Sonnet 5", @"Haiku 4.5"];
-}
 static NSArray<NSString*> *codexPlaceholders(void) {
     // The composer ghost-suggestion rotation, extracted VERBATIM from the qualified
     // codex 0.144.1 binary (strings dump, 2026-07-13) — the old partial list made
@@ -228,7 +224,9 @@ static NSArray<NSString*> *effortWords(void) {
                     if (sr.location != NSNotFound) mseg = [mseg substringToIndex:sr.location];
                 }
                 mseg = [mseg stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-                for (NSString *m in claudeModels()) if ([mseg isEqualToString:m]) { st.modelText = m; break; }
+                // Normalize to the catalog's display ("Opus 5.5 (1M context)" -> "Opus 5.5")
+                // so verification compares like with like; unknown models stay verbatim.
+                st.modelText = [[ModelCatalog current] canonicalClaudeDisplay:mseg];
                 if (!st.modelText && mseg.length) st.modelText = mseg; // unknown but present
             }
             break;

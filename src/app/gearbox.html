@@ -259,21 +259,25 @@
   const GATES=["1","2","3","4","5","R"];
   const GPOS={ "1":{x:0,y:0},"2":{x:0,y:1},"3":{x:.5,y:0},"4":{x:.5,y:1},"5":{x:1,y:0},"R":{x:1,y:1},"N":{x:.5,y:.5} };
   const COLS=[0,.5,1];
+  // Fallback only: the app replaces this with window.setProfiles() built from the model
+  // catalog (src/core/Models.m + config.toml). Kept in sync with the catalog defaults.
+  const E5=[{token:'low',label:'low'},{token:'medium',label:'medium'},{token:'high',label:'high'},
+            {token:'xhigh',label:'extra high'},{token:'max',label:'max'}];
+  const E6=E5.concat([{token:'ultra',label:'ultra'}]);
   const DEFAULTS={
     claude:{name:'Claude Code',
       models:[{gate:'1',token:'haiku',label:'Haiku 4.5'},{gate:'2',token:'sonnet',label:'Sonnet 5'},
-              {gate:'3',token:'default',label:'Opus 4.8'},{gate:'4',token:'fable',label:'Fable 5'}],
+              {gate:'3',token:'opus',label:'Opus 5.5'},{gate:'4',token:'fable',label:'Fable 5.1'}],
       efforts:[{token:'low',label:'low'},{token:'medium',label:'medium'},{token:'high',label:'high'},
                {token:'xhigh',label:'xhigh'},{token:'max',label:'max'},{token:'ultracode',label:'ultracode'}],
       modelEfforts:{}},
     codex:{name:'Codex',
-      models:[{gate:'1',token:'gpt-5.4-mini',label:'gpt-5.4-mini'},{gate:'2',token:'gpt-5.4',label:'gpt-5.4'},
-              {gate:'3',token:'gpt-5.5',label:'gpt-5.5'},{gate:'4',token:'gpt-5.6-luna',label:'gpt-5.6-luna'},
-              {gate:'5',token:'gpt-5.6-terra',label:'gpt-5.6-terra'},{gate:'R',token:'gpt-5.6-sol',label:'gpt-5.6-sol'}],
-      efforts:[{token:'low',label:'low'},{token:'medium',label:'medium'},{token:'high',label:'high'},
-               {token:'xhigh',label:'extra high'},{token:'max',label:'max'}],
-      modelEfforts:{'gpt-5.6-sol':[{token:'low',label:'low'},{token:'medium',label:'medium'},{token:'high',label:'high'},
-               {token:'xhigh',label:'extra high'},{token:'max',label:'max'},{token:'ultra',label:'ultra'}]}}
+      models:[{gate:'1',token:'gpt-6-luna',label:'gpt-6-luna'},{gate:'2',token:'gpt-6-sol',label:'gpt-6-sol'},
+              {gate:'3',token:'gpt-6-astra',label:'gpt-6-astra'},{gate:'4',token:'gpt-5.6-sol',label:'gpt-5.6-sol'},
+              {gate:'5',token:'gpt-5.6-terra',label:'gpt-5.6-terra'},{gate:'R',token:'gpt-5.5',label:'gpt-5.5'}],
+      efforts:E5,
+      modelEfforts:{'gpt-6-luna':E5,'gpt-6-sol':E6,'gpt-6-astra':E6,'gpt-5.6-sol':E6,'gpt-5.6-terra':E6,
+                    'gpt-5.5':E5.slice(0,4)}}
   };
 
   let PROFILES=null, shown='claude', liveAgent=null, liveToken='', liveEffort='', userLocked=false;
