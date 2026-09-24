@@ -94,6 +94,7 @@
   table.codes th,table.codes td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
   table.codes th{color:var(--mut);font-family:Sora;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
   table.codes td:first-child{font-family:"JetBrains Mono",monospace;color:var(--amb2);white-space:nowrap}
+  .grid > .card{min-width:0}
   .mtab{width:100%;border-collapse:collapse;font-size:.9rem;margin:6px 0 4px}
   .mtab th,.mtab td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}
   .mtab th{color:var(--mut);font-weight:600;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase}
@@ -116,7 +117,7 @@
     <a class="sec" href="#fluxo">Como funciona</a>
     <a class="sec" href="#guia">Guia de uso</a>
     <a class="sec" href="#modelos">Modelos</a>
-    <a class="sec" href="#windows">Linux/Windows</a>
+    <a class="sec" href="#windows">Linux/WSL</a>
     <a class="sec" href="#roadmap">Roadmap</a>
     <button class="tgl" id="themeToggle" aria-label="Alternar tema" title="Alternar tema">🌙</button>
     <a class="btn" href="https://github.com/inematds/stickshift" target="_blank" rel="noopener">GitHub</a>
@@ -306,52 +307,43 @@ xcode-select --install</pre></div>
 </div></section>
 
 <section id="windows"><div class="wrap">
-  <span class="chip">⚠️ Se você está no Linux ou no Windows</span>
-  <h2>StickShift ainda não roda fora do macOS</h2>
-  <p class="sub">O motor é construído sobre três pilares específicos de macOS — leitura de pane via Accessibility
-  API, injeção de tecla via CGEvent e permissões TCC — e nenhum dos três existe do mesmo jeito no Windows. Isso
-  não é uma limitação de descuido: é uma escolha documentada, com o mapa completo de portabilidade já escrito no
-  próprio repositório.</p>
-  <div class="grid g2">
-    <div class="card warn">
-      <h3>📖 Passo 1 — leia o README e o AGENTS.md</h3>
-      <p>O <code>README.md</code> documenta cada invariante de segurança (por que o painel nunca pode virar
-      key window, por que a entrega precisa de prova por delta de ocorrência, etc.) e o <code>docs/WINDOWS.md</code>
-      já traz a avaliação completa de porte: o que aproveita sem mudar (o classificador de pane, os planos de
-      protocolo, a máquina de estados — tudo funções puras sobre strings), o que precisa ser reconstruído
-      (UI Automation no lugar de Accessibility, <code>SendInput</code> no lugar de CGEvent, atribuição de pane
-      via árvore UIA do Windows Terminal no lugar de tty/processo do macOS) e a ordem de spikes que reduz o
-      risco mais rápido.</p>
-    </div>
-    <div class="card warn">
-      <h3>🤖 Passo 2 — peça pro seu próprio agente fazer a engenharia reversa</h3>
-      <p>Com o repo clonado no Windows, abra seu agente de código (Claude Code, Codex, ou outro) e peça pra ele
-      ler <code>README.md</code>, <code>AGENTS.md</code> e <code>docs/WINDOWS.md</code>, fazer a engenharia
-      reversa da lógica (o classificador em <code>src/core/AXState.m</code>, o motor de estados em
-      <code>src/core/Switch.m</code>, os planos em <code>src/core/Protocol.m</code>) e construir uma versão
-      adaptada pra Windows a partir daí — trocando UIA + SendInput no lugar das APIs de macOS, seguindo a ordem
-      de spikes sugerida no próprio <code>docs/WINDOWS.md</code>.</p>
-    </div>
+  <span class="chip">🐧 Linux e Windows (WSL)</span>
+  <h2>StickShift v2: painel web + chat no Linux</h2>
+  <p class="sub">No Linux, e no Windows via WSL, o StickShift v2 pede ao próprio terminal (tmux) para ler a tela e digitar,
+  sem Acessibilidade do macOS nem app nativo. Ele troca modelo e esforço do Claude Code e do Codex pela linha de comando
+  ou por um <strong>painel web</strong> com o mesmo câmbio, e tem um <strong>chat nível 1</strong> que manda prompts para o
+  agente do painel escolhido. Usa só Python 3, sem instalar nada. Validado ao vivo em 24/09/2026 com Claude Code 2.1.282
+  e Codex 0.156.1.</p>
+  <figure style="margin:0 0 18px;border-radius:14px;overflow:hidden;border:1px solid var(--line)"><img src="assets/v2-painel-web.png" alt="Painel web do StickShift v2: terminais com agente à esquerda, câmbio no centro e chat à direita" style="width:100%;display:block"></figure>
+  <div class="grid g3">
+    <div class="card"><h3>1 · Instale e liste</h3><p>Clone o repositório e ponha o lançador no PATH. O <code>list</code> mostra os painéis tmux com Claude Code ou Codex e o estado de cada um.</p>
+      <pre>ln -s "$PWD/v2/bin/stickshift2" \
+  ~/.local/bin/stickshift2
+stickshift2 list</pre></div>
+    <div class="card"><h3>2 · Troque pela linha de comando</h3><p>Sem <code>--commit</code>, é só simulação e mostra o plano. Com <code>--commit</code>, digita e confirma pela mensagem do próprio agente.</p>
+      <pre>stickshift2 shift 4 --pane %3
+stickshift2 shift 4 --pane %3 --commit
+stickshift2 keys   <span class="c"># atalhos do tmux</span></pre></div>
+    <div class="card"><h3>3 · Abra o painel web</h3><p>Abre em <code>127.0.0.1</code> com um token. À esquerda, os terminais; no centro, o câmbio; à direita, o chat com o agente.</p>
+      <pre>stickshift2 web
+<span class="c"># abra o endereço com ?t=… impresso</span></pre></div>
   </div>
-  <div class="card" style="margin-top:16px;border-color:var(--amb)">
-    <h3>🗺️ Plano v2: painel web + chat, em Linux, Windows e macOS</h3>
-    <p>Em vez de reconstruir a leitura da tela com as APIs de cada sistema, o StickShift passa a pedir ao próprio
-    terminal. tmux e WezTerm já sabem ler um painel, mandar texto para ele e dizer qual processo roda ali. A leitura
-    via tmux já foi testada com o Claude Code e o Codex neste servidor.</p>
-    <div class="grid g2" style="margin-top:12px">
-      <div><h3 style="font-size:1rem">🌐 Painel web</h3><p>O mesmo câmbio, servido em <code>127.0.0.1</code> e aberto no
-      navegador. Um painel só para os três sistemas. Em vez de agir na aba em foco, ele lista todos os painéis com
-      agente e você escolhe o alvo.</p></div>
-      <div><h3 style="font-size:1rem">💬 Chat nível 1</h3><p>Um prompt para o Claude Code ou o Codex do painel escolhido,
-      com a resposta lida da tela. Só envia com o agente ocioso e o campo vazio. Tarefas no sistema passam pelo agente
-      e pelas permissões dele; o chat nunca roda comando de shell.</p></div>
-    </div>
-    <p style="margin-top:10px">Segurança: só em <code>127.0.0.1</code>, com token e checagem de origem, acesso remoto
-    (Tailscale) opcional e log de tudo o que foi enviado. Estimativa das fases 0 a 4 (núcleo em Python, tmux, painel web
-    e chat): <strong>7 a 11 dias</strong>, testáveis neste servidor. O Windows nativo entra depois, pelo WezTerm.</p>
-    <p style="margin-top:8px"><strong>Anotado para a v3:</strong> chat com permissões, ou seja, aprovar ou negar pelo
-    chat os pedidos "Allow this command?" do agente. Ficará desligado por padrão e com registro de cada aprovação.
-    <a href="https://github.com/inematds/stickshift/blob/main/docs/PLANO-LINUX-WINDOWS.md" target="_blank" rel="noopener">Ler o plano v2 →</a></p>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>🔒 Garantias</h3><p>O agente é identificado pelo <strong>processo</strong> que roda no painel, não pelo texto. Só digita com o agente
+      ocioso e o campo vazio; a sugestão cinza do Claude não conta como rascunho. A troca é confirmada pela mensagem do agente
+      ("Set model to …", "Model changed to …"). O painel web exige token em toda chamada, checa <code>Host</code> e <code>Origin</code>
+      e registra tudo em <code>~/.stickshift/v2.log</code>.</p></div>
+    <div class="card"><h3>💬 Chat nível 1</h3><p>Só prompts: mensagens começando com <code>/</code>, <code>!</code> ou <code>#</code> são recusadas,
+      assim como quebras de linha. Tarefas no sistema passam pelo agente e pelas permissões dele. Se o agente pedir permissão,
+      o chat avisa e a decisão fica no terminal; aprovar pelo chat é a v3.</p></div>
+  </div>
+  <div class="card warn" style="margin-top:16px">
+    <h3>⚠️ Bom saber</h3>
+    <p><strong>Cada troca também vira o padrão do agente para sessões novas</strong>, como digitar <code>/model</code> à mão.
+    <code>opus</code> e <code>opus[1m]</code> são modelos diferentes (200K e 1M de contexto); as marchas usam <code>opus[1m]</code>.
+    O <strong>Windows nativo</strong> (backend WezTerm) é a fase 5 do plano e ainda não existe. Por enquanto, no Windows,
+    use o WSL com tmux. <a href="https://github.com/inematds/stickshift/tree/main/v2" target="_blank" rel="noopener">Código e README da v2 →</a> ·
+    <a href="https://github.com/inematds/stickshift/blob/main/docs/PLANO-LINUX-WINDOWS.md" target="_blank" rel="noopener">plano →</a></p>
   </div>
 </div></section>
 
@@ -374,7 +366,7 @@ xcode-select --install</pre></div>
   <div class="phase"><div class="tag">Próximo</div><div class="d"><strong>Mais terminais + identidade de pane mais forte</strong><span>Qualificar iTerm2 e outros via <code>scripts/qualify-terminal.sh</code>; reduzir a ambiguidade que hoje depende de título de janela + geometria + cwd.</span></div></div>
   <div class="phase"><div class="tag">Distribuição</div><div class="d"><strong>Developer ID + notarização</strong><span>A identidade auto-assinada resolve o treadmill do TCC localmente; distribuir além da própria máquina pede um Developer ID pago.</span></div></div>
   <div class="phase"><div class="tag">Modelos</div><div class="d"><strong>Catálogo de modelos (branch <code>catalogo-modelos</code>)</strong><span>Opus 5.5 e GPT-6 nas marchas padrão, modelo novo pelo <code>config.toml</code>; falta compilar e testar num Mac antes do merge.</span></div></div>
-  <div class="phase"><div class="tag">v2</div><div class="d"><strong>Linux e Windows com painel web + chat nível 1</strong><span>Núcleo em Python, tmux (Linux e WSL), painel web em <code>127.0.0.1</code> com token, chat que manda prompts para o agente do painel escolhido; depois, WezTerm para o Windows nativo. Escopo escolhido, implementação não iniciada.</span></div></div>
+  <div class="phase"><div class="tag">v2 ✓</div><div class="d"><strong>Linux e WSL com painel web + chat nível 1 (feito)</strong><span>Núcleo em Python, tmux, painel web com token e chat, validados ao vivo em 24/09/2026. Falta a fase 5: WezTerm para o Windows nativo.</span></div></div>
   <div class="phase"><div class="tag">v3</div><div class="d"><strong>Chat com permissões</strong><span>Aprovar ou negar pelo chat os pedidos de permissão do agente. Desligado por padrão, só em diálogos reconhecidos, com log de quem aprovou o quê.</span></div></div>
 </div></section>
 

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>StickShift Web</title>
+<style>
+  :root{--bg:#0c0c10;--bg2:#14141b;--card:#16161e;--line:#272730;--txt:#e9e9ee;--mut:#9a9aa6;
+        --amb:#E2A23B;--ok:#4ade80;--warn:#f0c070;--err:#f87171;--sky:#38bdf8;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 Inter,system-ui,sans-serif}
+  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header b{color:var(--amb);font-size:1.05rem;letter-spacing:-.01em}
+  header .mut{color:var(--mut);font-size:.85rem}
+  header .sp{margin-left:auto}
+  main{display:grid;grid-template-columns:260px minmax(0,1fr) 380px;gap:14px;padding:14px;align-items:start}
+  @media(max-width:1280px){main{grid-template-columns:240px minmax(0,1fr)} #chatcol{grid-column:1/-1}}
+  @media(max-width:760px){main{grid-template-columns:1fr}}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+  h2{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amb);margin:0 0 10px}
+  .pane{display:block;width:100%;text-align:left;background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+        padding:10px 12px;margin-bottom:8px;color:var(--txt);cursor:pointer;font:inherit}
+  .pane:hover{border-color:#3a3a46}.pane.on{border-color:var(--amb)}
+  .pane .n{font-weight:600;font-family:ui-monospace,monospace;font-size:.85rem}
+  .pane .a{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sky);margin-left:6px}
+  .pane .m{font-size:.85rem;margin-top:2px}.pane .s{font-size:.78rem;color:var(--mut)}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px;background:var(--mut)}
+  .dot.idle{background:var(--ok)}.dot.busy{background:var(--warn)}.dot.wait{background:var(--err)}
+  .empty{color:var(--mut);font-size:.9rem}
+  #gbwrap{position:relative;width:100%;overflow:hidden}
+  #gb{border:0;width:760px;height:440px;transform-origin:0 0;display:block;border-radius:12px;background:#000}
+  .hint{color:var(--mut);font-size:.82rem;margin-top:10px}
+  #msgs{height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px}
+  .msg{padding:8px 11px;border-radius:10px;white-space:pre-wrap;word-wrap:break-word;font-size:.9rem;max-width:92%}
+  .msg.user{align-self:flex-end;background:#2a2112;border:1px solid #4a3a1c}
+  .msg.agent{align-self:flex-start;background:var(--bg2);border:1px solid var(--line)}
+  .msg.sys{align-self:center;color:var(--mut);font-size:.8rem}
+  .msg .r{display:block;font-size:.7rem;color:var(--mut);margin-top:4px}
+  form{display:flex;gap:8px;margin-top:10px}
+  input[type=text]{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);border-radius:10px;color:var(--txt);
+        padding:10px 12px;font:inherit}
+  input[type=text]:focus{outline:none;border-color:var(--amb)}
+  button.send{background:var(--amb);color:#1a1206;border:0;border-radius:10px;padding:0 16px;font-weight:700;cursor:pointer}
+  button.send:disabled{opacity:.5;cursor:default}
+  #cstat{font-size:.8rem;color:var(--mut);margin-top:8px;min-height:1.2em}
+  #cstat.err{color:var(--err)}
+</style>
+</head>
+<body>
+<header>
+  <b>⚙️ StickShift Web</b><span class="mut" id="ver"></span>
+  <span class="mut">câmbio + chat para Claude Code e Codex no tmux</span>
+  <span class="sp mut" id="conn">conectando…</span>
+</header>
+<main>
+  <section class="box">
+    <h2>Terminais com agente</h2>
+    <div id="panes"><div class="empty">procurando…</div></div>
+    <div class="hint">Painéis tmux rodando Claude Code ou Codex. Escolha um para trocar modelo/esforço ou conversar.</div>
+  </section>
+  <section class="box">
+    <h2 id="gbtitle">Câmbio</h2>
+    <div id="gbwrap"><iframe id="gb" title="Câmbio do StickShift"></iframe></div>
+    <div class="hint">Puxe a marcha para trocar o modelo e arraste o acelerador para o esforço. Cada troca também vira o padrão
+      do agente para sessões novas, como digitar <code>/model</code> à mão.</div>
+  </section>
+  <section class="box" id="chatcol">
+    <h2>Chat com o agente</h2>
+    <div id="msgs"><div class="msg sys">Escolha um terminal à esquerda.</div></div>
+    <form id="f"><input type="text" id="t" maxlength="2000" autocomplete="off" placeholder="Pergunte ao agente…" disabled>
+      <button class="send" id="b" disabled>Enviar</button></form>
+    <div id="cstat"></div>
+    <div class="hint">Só prompts: mensagens começando com <code>/</code>, <code>!</code> ou <code>#</code> são recusadas. Pedidos de
+      permissão do agente continuam no terminal.</div>
+  </section>
+</main>
+<script>
+(function(){
+  var q=new URLSearchParams(location.search), T=q.get('t')||sessionStorage.getItem('ss_t')||'';
+  if(q.get('t')){ sessionStorage.setItem('ss_t',T); history.replaceState(null,'',location.pathname); }
+  var H={'X-StickShift-Token':T,'Content-Type':'application/json'};
+  var cur=sessionStorage.getItem('ss_pane')||'', panes=[], lastChat='';
+  var $=function(id){return document.getElementById(id);};
+  function api(u,o){ o=o||{}; o.headers=H; return fetch(u,o).then(function(r){ if(r.status===401) throw new Error('token'); return r.json(); }); }
+  function el(tag,cls,txt){ var e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+
+  function fitGearbox(){ var w=$('gbwrap').clientWidth, s=Math.min(1,w/760); $('gb').style.transform='scale('+s+')'; $('gbwrap').style.height=(440*s)+'px'; }
+  window.addEventListener('resize',fitGearbox);
+
+  function select(id){
+    cur=id; sessionStorage.setItem('ss_pane',id);
+    $('gb').src='/gearbox?t='+encodeURIComponent(T)+'&pane='+encodeURIComponent(id);
+    var p=panes.find(function(x){return x.id===id;});
+    $('gbtitle').textContent='Câmbio — '+(p?p.name+' · '+p.agent:id);
+    $('t').disabled=false; $('b').disabled=false; lastChat=''; renderPanes(); loadChat();
+  }
+
+  function renderPanes(){
+    var box=$('panes'); box.textContent='';
+    if(!panes.length){ box.appendChild(el('div','empty','Nenhum Claude Code ou Codex rodando no tmux.')); return; }
+    panes.forEach(function(p){
+      var b=el('button','pane'+(p.id===cur?' on':'')); b.type='button';
+      var n=el('div'); var d=el('span','dot '+(p.idle?'idle':(p.busy?'busy':'wait'))); n.appendChild(d);
+      n.appendChild(el('span','n',p.name)); n.appendChild(el('span','a',p.agent)); b.appendChild(n);
+      b.appendChild(el('div','m',(p.model||'?')+(p.effort?' · '+p.effort:'')));
+      b.appendChild(el('div','s',p.idle?p.cwd:(p.note||'')));
+      b.addEventListener('click',function(){ select(p.id); });
+      box.appendChild(b);
+    });
+  }
+
+  function loadPanes(){
+    api('/api/panes').then(function(r){
+      panes=r.panes; $('ver').textContent='v'+r.version; $('conn').textContent='conectado';
+      renderPanes();
+      if(!cur && panes.length) select(panes[0].id);
+      else if(cur && !$('gb').src) select(cur);
+    }).catch(function(e){ $('conn').textContent=e.message==='token'?'token inválido — use o endereço impresso no terminal':'sem conexão'; });
+  }
+
+  function loadChat(){
+    if(!cur) return;
+    api('/api/chat?pane='+encodeURIComponent(cur)).then(function(v){
+      var key=JSON.stringify(v); if(key===lastChat) return; lastChat=key;
+      var box=$('msgs'); box.textContent='';
+      if(!v.history.length) box.appendChild(el('div','msg sys','Sem mensagens ainda neste terminal.'));
+      v.history.forEach(function(m){
+        var d=el('div','msg '+(m.role==='user'?'user':(m.role==='agent'?'agent':'sys')), m.text||'');
+        if(m.reason && m.reason!=='DONE') d.appendChild(el('span','r',m.reason+' · '+m.t)); else d.appendChild(el('span','r',m.t));
+        box.appendChild(d);
+      });
+      box.scrollTop=box.scrollHeight;
+      var s=v.status||{}, st=$('cstat');
+      var label={sending:'enviando…',working:'o agente está trabalhando…',waiting:'o agente espera uma resposta no terminal',
+                 timeout:'sem resposta completa ainda — veja o terminal',error:'erro',idle:''}[s.state]||'';
+      st.textContent=label+(s.detail&&s.state!=='idle'?' — '+s.detail:''); st.className=(s.state==='error'||s.state==='waiting')?'err':'';
+      var busy=s.state==='sending'||s.state==='working'; $('b').disabled=busy; $('t').disabled=busy;
+    }).catch(function(){});
+  }
+
+  $('f').addEventListener('submit',function(ev){
+    ev.preventDefault(); var text=$('t').value; if(!text.trim()||!cur) return;
+    $('b').disabled=true;
+    api('/api/chat',{method:'POST',body:JSON.stringify({pane:cur,text:text})}).then(function(r){
+      if(r.ok){ $('t').value=''; $('cstat').className=''; $('cstat').textContent='enviado'; }
+      else { $('cstat').className='err'; $('cstat').textContent=r.reason+' — '+(r.detail||''); $('b').disabled=false; }
+      lastChat=''; loadChat();
+    });
+  });
+  window.addEventListener('message',function(e){ if(e.origin===location.origin && e.data&&e.data.ss==='shifted') loadPanes(); });
+
+  fitGearbox(); loadPanes(); setInterval(loadPanes,2500); setInterval(loadChat,1500);
+})();
+</script>
+</body>
+</html>

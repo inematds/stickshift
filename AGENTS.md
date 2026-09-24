@@ -158,8 +158,12 @@ See "Source map" in `README.md`. Quick anchors: engine state machine
 
 ## Windows / Linux
 
-Not supported. The core design (AX pane reads, CGEvent injection, TCC) is
-macOS-specific. `docs/WINDOWS.md` tracks the port assessment: what carries over (the
-classifier, protocol plans, and state-machine logic are OS-agnostic by design) and
-what must be rebuilt (UI Automation reads, SendInput typing, terminal attribution).
-If the user asks for Windows, read that file first and set expectations honestly.
+The macOS app (this Objective-C engine) is macOS-only. For Linux and Windows-via-WSL,
+use **StickShift v2** in `v2/` (Python 3 stdlib, tmux backend, web panel + level-1
+chat): read `v2/README.md`, run `cd v2 && python3 -m unittest discover -s tests`, then
+`v2/bin/stickshift2 list`. Live-test against an isolated tmux server
+(`stickshift2 --socket <name>`), and back up and restore `~/.claude/settings.json`
+(`model`, `effortLevel`, `modelSettings`) and `~/.codex/config.toml` (`model`,
+`model_reasoning_effort`), because every shift also becomes the agent's default.
+Windows-native (WezTerm backend) is phase 5 of `docs/PLANO-LINUX-WINDOWS.md`, not built.
+`docs/WINDOWS.md` keeps the UIA/SendInput assessment for a Windows Terminal port.

@@ -1,6 +1,6 @@
 # Plano v2: StickShift no Linux e no Windows, com painel web e chat
 
-**Status: v2, escopo escolhido pelo Nei em 24/09/2026. Implementação ainda não iniciada.**
+**Status (24/09/2026): fases 0 a 4 implementadas e validadas ao vivo neste servidor** (tmux, Claude Code 2.1.282, Codex 0.156.1). O código está em [`v2/`](../v2/README.md). A fase 5 (WezTerm/Windows nativo) está pendente, e o chat com permissões fica para a v3.
 
 | Versão | O que muda |
 |---|---|
@@ -95,3 +95,25 @@ navegador (painel + chat) ──HTTP/WebSocket──► stickshift-web (Python, 
 - **Chat lendo resposta pela tela.** Respostas longas rolam para fora do `capture-pane`. Mitigação: capturar com histórico (`-S -`), limitar o tamanho e oferecer "ver no terminal".
 - **Painel exposto na rede por engano.** Mitigação: loopback + token + `Origin` por padrão; o acesso remoto é opcional.
 - **Usuário fora de tmux/WezTerm/kitty.** Não é suportado; recusa com motivo claro.
+
+## Resultado da implementação (24/09/2026)
+
+| Fase | Status | Evidência |
+|---|---|---|
+| 0. Spike | feita | Capturas de tela reais dos dois agentes no tmux; o classificador acertou 10 de 10 telas |
+| 1. Núcleo em Python | feita | `v2/stickshift2/`: catálogo, classificador, planos, motor, recusas; 24 testes passando |
+| 2. tmux + CLI | feita | Trocas reais no Claude Code (esforço, sonnet → `opus[1m]`, já-definido) e no Codex (Ultra pelo submenu, xhigh, medium, recusa de esforço inválido) |
+| 3. Painel web | feita | Token, `Host` e `Origin` testados; troca pelo painel `CHANGED` com a marcha acesa |
+| 4. Chat nível 1 | feita | Pergunta e resposta nos dois agentes (CLI e painel web); `/`, `!` e `#` recusados |
+| 5. WezTerm | pendente | WezTerm não instalado aqui e sem máquina Windows para testar |
+
+Achados da fase 0 que mudaram o desenho:
+- **Claude Code 2.1.282**
+  - O "ocupado" agora é uma linha de spinner com "…", e não tem mais "esc to interrupt".
+  - A sugestão de próximo prompt aparece no campo em *dim*.
+  - `opus` (200K) e `opus[1m]` (1M) são modelos diferentes.
+- **Codex 0.156.1**
+  - O rodapé e o seletor mostram nomes de exibição (`GPT-6-Astra`).
+  - Max e Ultra ficam no submenu "More reasoning…".
+  - O campo no Ultra usa `»`.
+  - Os textos de exemplo do campo vazio mudaram.

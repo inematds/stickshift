@@ -29,6 +29,20 @@ tells it everything, including how to adapt to your terminal and debug refusals.
 macOS only (see `docs/WINDOWS.md` for the port assessment). Warp is verified end to
 end; other terminals are [qualifiable in four steps](#supported-terminals).
 
+### Linux / WSL: StickShift v2 (web panel + chat)
+
+On Linux (and Windows through WSL) StickShift v2 drives Claude Code and Codex running
+in **tmux** panes: CLI, a **web panel** with this same gearbox, and a **level-1 chat**
+that sends prompts to the agent in the chosen pane. Python 3 standard library only.
+Validated live on 2026-09-24 (Claude Code 2.1.282, Codex 0.156.1). See
+[`v2/README.md`](v2/README.md) (Portuguese) and the plan in
+[`docs/PLANO-LINUX-WINDOWS.md`](docs/PLANO-LINUX-WINDOWS.md).
+
+```sh
+ln -s "$PWD/v2/bin/stickshift2" ~/.local/bin/stickshift2
+stickshift2 list && stickshift2 web
+```
+
 ---
 
 ## Contents
