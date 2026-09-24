@@ -334,12 +334,24 @@ xcode-select --install</pre></div>
     </div>
   </div>
   <div class="card" style="margin-top:16px;border-color:var(--amb)">
-    <h3>🗺️ Plano proposto: Linux e Windows via multiplexador (aguardando aprovação)</h3>
-    <p>Em vez de reconstruir a leitura da tela com as APIs de cada sistema, a proposta é pedir ao próprio terminal.
-    tmux, WezTerm e kitty já sabem ler o texto de um painel, mandar texto para ele e dizer qual processo roda ali.
-    O classificador, os planos, o catálogo e as recusas continuam os mesmos. Primeiras fases: tmux no Linux (que
-    também cobre quem usa o WSL no Windows), cerca de 4 a 6 dias, testável neste servidor. O WezTerm cobre o
-    Windows nativo. <a href="https://github.com/inematds/stickshift/blob/main/docs/PLANO-LINUX-WINDOWS.md" target="_blank" rel="noopener">Ler o plano completo →</a></p>
+    <h3>🗺️ Plano v2: painel web + chat, em Linux, Windows e macOS</h3>
+    <p>Em vez de reconstruir a leitura da tela com as APIs de cada sistema, o StickShift passa a pedir ao próprio
+    terminal. tmux e WezTerm já sabem ler um painel, mandar texto para ele e dizer qual processo roda ali. A leitura
+    via tmux já foi testada com o Claude Code e o Codex neste servidor.</p>
+    <div class="grid g2" style="margin-top:12px">
+      <div><h3 style="font-size:1rem">🌐 Painel web</h3><p>O mesmo câmbio, servido em <code>127.0.0.1</code> e aberto no
+      navegador. Um painel só para os três sistemas. Em vez de agir na aba em foco, ele lista todos os painéis com
+      agente e você escolhe o alvo.</p></div>
+      <div><h3 style="font-size:1rem">💬 Chat nível 1</h3><p>Um prompt para o Claude Code ou o Codex do painel escolhido,
+      com a resposta lida da tela. Só envia com o agente ocioso e o campo vazio. Tarefas no sistema passam pelo agente
+      e pelas permissões dele; o chat nunca roda comando de shell.</p></div>
+    </div>
+    <p style="margin-top:10px">Segurança: só em <code>127.0.0.1</code>, com token e checagem de origem, acesso remoto
+    (Tailscale) opcional e log de tudo o que foi enviado. Estimativa das fases 0 a 4 (núcleo em Python, tmux, painel web
+    e chat): <strong>7 a 11 dias</strong>, testáveis neste servidor. O Windows nativo entra depois, pelo WezTerm.</p>
+    <p style="margin-top:8px"><strong>Anotado para a v3:</strong> chat com permissões, ou seja, aprovar ou negar pelo
+    chat os pedidos "Allow this command?" do agente. Ficará desligado por padrão e com registro de cada aprovação.
+    <a href="https://github.com/inematds/stickshift/blob/main/docs/PLANO-LINUX-WINDOWS.md" target="_blank" rel="noopener">Ler o plano v2 →</a></p>
   </div>
 </div></section>
 
@@ -361,7 +373,9 @@ xcode-select --install</pre></div>
   <div class="phase"><div class="tag">Hoje</div><div class="d"><strong>Warp verificado ponta a ponta</strong><span>Terminal.app com leitura + injeção verificadas; iTerm2 ainda não qualificado. Só Warp habilitado por padrão.</span></div></div>
   <div class="phase"><div class="tag">Próximo</div><div class="d"><strong>Mais terminais + identidade de pane mais forte</strong><span>Qualificar iTerm2 e outros via <code>scripts/qualify-terminal.sh</code>; reduzir a ambiguidade que hoje depende de título de janela + geometria + cwd.</span></div></div>
   <div class="phase"><div class="tag">Distribuição</div><div class="d"><strong>Developer ID + notarização</strong><span>A identidade auto-assinada resolve o treadmill do TCC localmente; distribuir além da própria máquina pede um Developer ID pago.</span></div></div>
-  <div class="phase"><div class="tag">Windows</div><div class="d"><strong>Porte documentado, não iniciado</strong><span>Classificador, protocolo e máquina de estados portam quase sem mudança; o spike crítico é a leitura de texto via UIA no Windows Terminal. Mapa completo em <code>docs/WINDOWS.md</code>.</span></div></div>
+  <div class="phase"><div class="tag">Modelos</div><div class="d"><strong>Catálogo de modelos (branch <code>catalogo-modelos</code>)</strong><span>Opus 5.5 e GPT-6 nas marchas padrão, modelo novo pelo <code>config.toml</code>; falta compilar e testar num Mac antes do merge.</span></div></div>
+  <div class="phase"><div class="tag">v2</div><div class="d"><strong>Linux e Windows com painel web + chat nível 1</strong><span>Núcleo em Python, tmux (Linux e WSL), painel web em <code>127.0.0.1</code> com token, chat que manda prompts para o agente do painel escolhido; depois, WezTerm para o Windows nativo. Escopo escolhido, implementação não iniciada.</span></div></div>
+  <div class="phase"><div class="tag">v3</div><div class="d"><strong>Chat com permissões</strong><span>Aprovar ou negar pelo chat os pedidos de permissão do agente. Desligado por padrão, só em diálogos reconhecidos, com log de quem aprovou o quê.</span></div></div>
 </div></section>
 
 <footer>
