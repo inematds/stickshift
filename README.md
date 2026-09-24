@@ -370,6 +370,11 @@ Opus 5.5, but "Opus 5" never counts as "Opus 5.5" and "Fable 5" never counts as
 gpt-5.5). `default` is deliberately not in the catalog: it resolves per account, so a
 gear on it could never be verified.
 
+**`opus` vs `opus[1m]`:** on Claude Code 2.1.282, `/model opus` sets "Opus 5.5" (200K context) and
+`/model opus[1m]` sets "Opus 5.5 (1M context)". This catalog's `opus` entry is the 200K model; if you
+run the 1M variant, add `claude_model.opus[1m] = "Opus 5.5 (1M context)"` and point gears at it (the
+Linux v2 defaults already do).
+
 **Strings verified against the live TUIs (tmux on Linux, 2026-09-24, same TUI as macOS):**
 Codex 0.156.1 shows DISPLAY names in the footer and picker (`GPT-6-Astra medium · ~/x`,
 `2. GPT-6-Astra (current)`) but the slug in `Model changed to gpt-6-astra medium`; the
