@@ -18,10 +18,11 @@ static NSString *codeIdForKind(AgentKind k) { return k == AgentClaude ? @"com.an
 
 // Qualified version set (extend as qualification runs add versions).
 static NSSet *qualifiedVersions(AgentKind k) {
-    // 2.1.282 / 0.156.1: model names read from these versions on 2026-09-24 (Linux
-    // install) — NOT yet re-qualified on a Mac. Keep until `make matrix` passes there.
-    return k == AgentClaude ? [NSSet setWithArray:@[@"2.1.205", @"2.1.282"]]
-                            : [NSSet setWithArray:@[@"0.144.1", @"0.156.1"]];
+    // Claude Code 2.1.282 and Codex 0.156.1 supplied the 2026-09-24 model catalog but are
+    // NOT promoted here: per AGENTS.md a series becomes known-good only after
+    // `make test && make matrix` on a Mac. Until then they run under the drift policy.
+    return k == AgentClaude ? [NSSet setWithArray:@[@"2.1.205"]]
+                            : [NSSet setWithArray:@[@"0.144.1"]];
 }
 
 - (NSString *)codeSignInfoForPath:(NSString *)path team:(NSString **)outTeam ident:(NSString **)outId {

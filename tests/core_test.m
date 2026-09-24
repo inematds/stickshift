@@ -621,6 +621,58 @@ int main(void) {
             [Config defaults];                                   // restore default catalog
         }
 
+        printf("\n== codex 0.156.1 live captures (tmux on Linux, 2026-09-24) ==\n");
+        {
+            [Config defaults];
+            // Footer now shows the DISPLAY name; plans and "Model changed to" use the slug.
+            NSString *foot = @"› Ask Codex to do anything\n"
+                             @"  GPT-6-Astra medium · ~/projetos/agentic-workflow                ⚠ 3 warnings · f2 to view\n";
+            PaneState *cf = [PaneState new]; [AXState classifyText:foot into:cf];
+            check(cf.agent == AgentCodex, @"0.156.1 footer: agent = codex");
+            check([cf.modelText isEqualToString:@"gpt-6-astra"], @"0.156.1 footer: 'GPT-6-Astra' normalized to gpt-6-astra");
+            check([cf.effortText isEqualToString:@"medium"], @"0.156.1 footer: effort = medium");
+            NSString *picker =
+              @"  Select Model and Effort\n"
+              @"  1. GPT-6-Sol (default)    Workhorse model for coding and everyday work.\n"
+              @"› 2. GPT-6-Astra (current)  Frontier intelligence for the most demanding work.\n"
+              @"  3. GPT-6-Luna             Fast and affordable model for easier tasks.\n"
+              @"  4. GPT-5.6-Sol            Older coding model for complex work.\n"
+              @"  7. GPT-5.5                Legacy coding model.\n";
+            check([AXState codexPickerRowFor:@"gpt-6-astra" inText:picker] == 2, @"0.156.1 picker: slug finds display row (astra = 2)");
+            check([AXState codexPickerRowFor:@"gpt-6-sol" inText:picker] == 1, @"0.156.1 picker: gpt-6-sol = 1 (not 5.6-sol)");
+            NSString *effStage =
+              @"  Select Reasoning Level for GPT-6-Astra\n"
+              @"  1. Low                         Fast responses with lighter reasoning\n"
+              @"› 2. Medium (default) (current)  Balances speed and reasoning depth for everyday tasks\n"
+              @"  3. High                        Greater reasoning depth for complex problems\n"
+              @"  4. Extra high                  Extra high reasoning depth for complex problems\n"
+              @"  5. More reasoning…             Max and Ultra consume usage limits faster\n";
+            check([AXState codexPickerRowFor:@"Extra high" inText:effStage] == 4, @"0.156.1 effort: Extra high = 4");
+            check([AXState codexPickerRowFor:@"More reasoning…" inText:effStage] == 5, @"0.156.1 effort: More reasoning… = 5");
+            check([AXState codexPickerRowFor:@"Max" inText:effStage] == 0, @"0.156.1 effort: Max is NOT on the first stage");
+            NSString *adv = @"  Advanced Reasoning\n  ⚠ Consumes usage limits faster\n"
+                            @"› 1. Max    For difficult problems when quality matters more than speed · higher usage\n"
+                            @"  2. Ultra  For demanding work using multiple agents · highest usage\n";
+            check([AXState codexPickerRowFor:@"Max" inText:adv] == 1 && [AXState codexPickerRowFor:@"Ultra" inText:adv] == 2,
+                  @"0.156.1 advanced stage: Max = 1, Ultra = 2");
+            GearTuple *ux = [GearTuple new]; ux.model = @"gpt-6-astra"; ux.effort = @"ultra";
+            SwitchPlan *up = [ShiftProtocol planForKind:AgentCodex tuple:ux];
+            BOOL more = NO, advWait = NO, ultraSel = NO;
+            for (PlanStep *st in up.steps) {
+                if (st.kind == StepCodexSelect && [st.text isEqualToString:@"More reasoning…"]) more = YES;
+                if (st.kind == StepWaitState && [st.text isEqualToString:@"Advanced Reasoning"]) advWait = YES;
+                if (st.kind == StepCodexSelect && [st.text isEqualToString:@"Ultra"]) ultraSel = YES;
+            }
+            check(more && advWait && ultraSel, @"codex ultra plan goes through More reasoning… -> Advanced Reasoning -> Ultra");
+            GearTuple *hx = [GearTuple new]; hx.model = @"gpt-6-astra"; hx.effort = @"high";
+            BOOL moreHigh = NO;
+            for (PlanStep *st in [ShiftProtocol planForKind:AgentCodex tuple:hx].steps)
+                if ([st.text isEqualToString:@"More reasoning…"]) moreHigh = YES;
+            check(!moreHigh, @"codex high plan does NOT open the advanced sub-picker");
+            check([up.evidenceNeedles.firstObject isEqualToString:@"Model changed to gpt-6-astra"],
+                  @"codex evidence uses the slug ('Model changed to gpt-6-astra medium' live)");
+        }
+
         printf("\n== manifest: version lookup across npm layouts ==\n");
         {
             // codex layout: package.json THREE levels above the binary

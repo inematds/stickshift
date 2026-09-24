@@ -370,6 +370,22 @@ Opus 5.5, but "Opus 5" never counts as "Opus 5.5" and "Fable 5" never counts as
 gpt-5.5). `default` is deliberately not in the catalog: it resolves per account, so a
 gear on it could never be verified.
 
+**Strings verified against the live TUIs (tmux on Linux, 2026-09-24, same TUI as macOS):**
+Codex 0.156.1 shows DISPLAY names in the footer and picker (`GPT-6-Astra medium · ~/x`,
+`2. GPT-6-Astra (current)`) but the slug in `Model changed to gpt-6-astra medium`; the
+footer is now parsed case-insensitively and normalized to the slug. Max and Ultra moved
+behind a `More reasoning…` row that opens an `Advanced Reasoning` sub-picker; Codex plans
+for max/ultra now go through it. Claude Code 2.1.282 shows `Opus 5.5 (1M context)` in
+`/model`, normalized to Opus 5.5.
+
+Known drift to check on the Mac:
+- `codexPlaceholders()` in `src/core/AXState.m` is still the 0.144.1 rotation. If an empty
+  Codex composer refuses with `DRAFT_PRESENT`, re-extract it (`strings` on the codex
+  binary) as described in AGENTS.md.
+- The Claude classifier reads the model from a `📂 <cwd> · <Model>` status line. That line
+  appears to come from a custom statusline, not default Claude Code; without it the pane
+  model reads as unknown and model shifts cannot verify. Confirm with `stickshift status`.
+
 **2026-09-24 catalog change: not yet compiled or run on a Mac.** Before trusting it:
 `make test`, `make matrix`, `stickshift doctor`, then `stickshift status` in a pane
 running each agent to confirm the on-screen names, and a dry run (`stickshift 3`)

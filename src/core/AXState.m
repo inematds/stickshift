@@ -247,10 +247,15 @@ static NSArray<NSString*> *effortWords(void) {
         NSError *err = nil;
         NSRegularExpression *re = [NSRegularExpression regularExpressionWithPattern:
             @"(gpt-[A-Za-z0-9._-]+)\\s+(extra high|low|medium|high|xhigh|max|ultra)\\s+(?:·\\s+)?((?:/|~/)[^\\n]+)"
-            options:0 error:&err];
+            options:NSRegularExpressionCaseInsensitive error:&err];
         for (NSTextCheckingResult *mm in [re matchesInString:text options:0 range:NSMakeRange(0, text.length)]) {
-            st.modelText = [text substringWithRange:[mm rangeAtIndex:1]];
-            st.effortText = [text substringWithRange:[mm rangeAtIndex:2]];
+            // Codex 0.156.1 renders the display name in the footer ("GPT-6-Astra medium ·
+            // ~/x", live capture 2026-09-24) while plans and the "Model changed to" line
+            // use the slug. Normalize to the catalog token so both compare equal.
+            NSString *rawModel = [text substringWithRange:[mm rangeAtIndex:1]];
+            ModelEntry *known = [[ModelCatalog current] entryForKind:AgentCodex token:rawModel];
+            st.modelText = known ? known.token : rawModel.lowercaseString;
+            st.effortText = [[text substringWithRange:[mm rangeAtIndex:2]] lowercaseString];
             NSString *cwd = [self plausibleCwd:[text substringWithRange:[mm rangeAtIndex:3]]];
             if (cwd) st.cwdHint = cwd;
         }

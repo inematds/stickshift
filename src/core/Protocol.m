@@ -94,6 +94,12 @@ static NSString *codexEffortDisplay(NSString *effort) {
         [steps addObject:S(StepCodexSelect, tuple.model, ([NSString stringWithFormat:@"select model row for %@ (label-verified)", tuple.model]))];
         if (tuple.effort) {
             [steps addObject:S(StepWaitState, @"Select Reasoning Level", @"await effort stage")];
+            // Codex 0.156.1 (live capture 2026-09-24): Max and Ultra moved behind a
+            // "More reasoning…" row that opens an "Advanced Reasoning" sub-picker.
+            if ([tuple.effort isEqualToString:@"max"] || [tuple.effort isEqualToString:@"ultra"]) {
+                [steps addObject:S(StepCodexSelect, @"More reasoning…", @"open the advanced-reasoning sub-picker (label-verified)")];
+                [steps addObject:S(StepWaitState, @"Advanced Reasoning", @"await advanced-reasoning stage")];
+            }
             [steps addObject:S(StepCodexSelect, codexEffortDisplay(tuple.effort), ([NSString stringWithFormat:@"select effort row for %@ (label-verified)", tuple.effort]))];
         } else {
             [steps addObject:S(StepReturn, nil, @"confirm current effort")];
