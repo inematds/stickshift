@@ -94,6 +94,11 @@
   table.codes th,table.codes td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
   table.codes th{color:var(--mut);font-family:Sora;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
   table.codes td:first-child{font-family:"JetBrains Mono",monospace;color:var(--amb2);white-space:nowrap}
+  .mtab{width:100%;border-collapse:collapse;font-size:.9rem;margin:6px 0 4px}
+  .mtab th,.mtab td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .mtab th{color:var(--mut);font-weight:600;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase}
+  .mtab td code{font-size:.85em}
+  .twrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-top:14px}
 </style>
 </head>
 <body>
@@ -110,7 +115,8 @@
     <a class="sec" href="#oque">O que é</a>
     <a class="sec" href="#fluxo">Como funciona</a>
     <a class="sec" href="#guia">Guia de uso</a>
-    <a class="sec" href="#windows">Windows</a>
+    <a class="sec" href="#modelos">Modelos</a>
+    <a class="sec" href="#windows">Linux/Windows</a>
     <a class="sec" href="#roadmap">Roadmap</a>
     <button class="tgl" id="themeToggle" aria-label="Alternar tema" title="Alternar tema">🌙</button>
     <a class="btn" href="https://github.com/inematds/stickshift" target="_blank" rel="noopener">GitHub</a>
@@ -243,9 +249,60 @@ xcode-select --install</pre></div>
   </div></div>
 </div></section>
 
+<section id="modelos"><div class="wrap">
+  <span class="chip">🧩 Qualquer modelo</span>
+  <h2>Modelo novo sem recompilar</h2>
+  <p class="sub">A versão publicada conhecia só Opus 4.8, Fable 5 e a família gpt-5.x. No branch
+  <a href="https://github.com/inematds/stickshift/tree/catalogo-modelos" target="_blank" rel="noopener"><code>catalogo-modelos</code></a>, os modelos viram <strong>dados</strong>:
+  um catálogo único diz quais modelos existem, como cada um aparece na tela e quais esforços aceita. As marchas
+  padrão já vêm com o Opus 5.5 e a família GPT-6.</p>
+  <div class="card warn">
+    <h3>⚠️ Ainda não compilado nem testado num Mac</h3>
+    <p>O código foi escrito num servidor Linux, sem o compilador da Apple. Os nomes dos modelos vieram dos
+    programas instalados (Claude Code 2.1.282 e Codex 0.156.1). Antes de usar, num Mac: <code>git checkout catalogo-modelos</code>,
+    <code>make test</code>, <code>make matrix</code>, <code>stickshift doctor</code> e <code>stickshift status</code>
+    num painel com cada agente. Só depois disso o branch entra no <code>main</code>.</p>
+  </div>
+  <div class="twrap"><table class="mtab">
+    <thead><tr><th>Marcha</th><th>Claude Code</th><th>Codex</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Haiku 4.5</td><td>gpt-6-luna · medium</td></tr>
+      <tr><td>2</td><td>Sonnet 5</td><td>gpt-6-sol · medium</td></tr>
+      <tr><td><b>3</b></td><td><b>Opus 5.5 · medium</b></td><td><b>gpt-6-astra · medium</b></td></tr>
+      <tr><td>4</td><td>Opus 5.5 · high</td><td>gpt-6-astra · high</td></tr>
+      <tr><td>5</td><td>Opus 5.5 · xhigh</td><td>gpt-6-astra · xhigh</td></tr>
+      <tr><td>R</td><td>Opus 5.5 · low</td><td>gpt-6-sol · low</td></tr>
+      <tr><td>ULTRA</td><td>Opus 5.5 · ultracode</td><td>gpt-6-astra · ultra</td></tr>
+    </tbody>
+  </table></div>
+  <p class="sub" style="margin-top:12px">A escada segue a <a href="https://inematds.github.io/modelos/guia/esforco/" target="_blank" rel="noopener">referência de esforço</a>:
+  medium como marcha de trabalho, high quando precisar de mais raciocínio e xhigh para o caso difícil. O max fica
+  fora das marchas padrão, mas continua disponível pelo acelerador ou por remapeamento.</p>
+  <div class="grid g2" style="margin-top:8px">
+    <div class="card">
+      <h3>1 · Ensine o modelo novo</h3>
+      <p>No <code>~/.stickshift/config.toml</code>, uma linha por modelo:</p>
+      <pre><span class="k">claude_model.opus</span> = <span class="s">"Opus 5.6"</span>
+<span class="k">codex_model.gpt-7-nova</span> = <span class="s">"low medium high xhigh max"</span>
+<span class="k">gear.3.claude</span> = <span class="s">"opus medium"</span></pre>
+      <p>No Claude, a chave é o argumento do <code>/model</code> e o valor é o nome da linha de status. No Codex, a
+      chave é o nome no seletor e o valor é a lista de esforços que o modelo aceita.</p>
+    </div>
+    <div class="card">
+      <h3>2 · Confira antes de trocar</h3>
+      <p><code>stickshift status</code> num painel com o modelo novo precisa mostrar o mesmo nome. Depois,
+      <code>stickshift 3</code> sem <code>--commit</code> imprime o plano sem digitar nada; só então use
+      <code>--commit</code>.</p>
+      <p style="margin-top:8px">A comparação de nomes aceita decoração ("Opus 5.5 (1M context)" conta como Opus 5.5),
+      mas nunca confunde versões: "Opus 5" não é "Opus 5.5". No Codex, cada modelo só aceita os próprios
+      esforços; pedir ultra no luna é recusado.</p>
+    </div>
+  </div>
+</div></section>
+
 <section id="windows"><div class="wrap">
-  <span class="chip">⚠️ Se você está no Windows</span>
-  <h2>StickShift ainda não roda no Windows</h2>
+  <span class="chip">⚠️ Se você está no Linux ou no Windows</span>
+  <h2>StickShift ainda não roda fora do macOS</h2>
   <p class="sub">O motor é construído sobre três pilares específicos de macOS — leitura de pane via Accessibility
   API, injeção de tecla via CGEvent e permissões TCC — e nenhum dos três existe do mesmo jeito no Windows. Isso
   não é uma limitação de descuido: é uma escolha documentada, com o mapa completo de portabilidade já escrito no
@@ -270,6 +327,14 @@ xcode-select --install</pre></div>
       adaptada pra Windows a partir daí — trocando UIA + SendInput no lugar das APIs de macOS, seguindo a ordem
       de spikes sugerida no próprio <code>docs/WINDOWS.md</code>.</p>
     </div>
+  </div>
+  <div class="card" style="margin-top:16px;border-color:var(--amb)">
+    <h3>🗺️ Plano proposto: Linux e Windows via multiplexador (aguardando aprovação)</h3>
+    <p>Em vez de reconstruir a leitura da tela com as APIs de cada sistema, a proposta é pedir ao próprio terminal.
+    tmux, WezTerm e kitty já sabem ler o texto de um painel, mandar texto para ele e dizer qual processo roda ali.
+    O classificador, os planos, o catálogo e as recusas continuam os mesmos. Primeiras fases: tmux no Linux (que
+    também cobre quem usa o WSL no Windows), cerca de 4 a 6 dias, testável neste servidor. O WezTerm cobre o
+    Windows nativo. <a href="https://github.com/inematds/stickshift/blob/main/docs/PLANO-LINUX-WINDOWS.md" target="_blank" rel="noopener">Ler o plano completo →</a></p>
   </div>
 </div></section>
 
