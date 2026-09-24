@@ -58,7 +58,7 @@ Alternativa: Go, se um binário único for prioridade. Custa mais ou menos 30% a
 
 | Fase | Entrega | Critério de pronto | Estimativa |
 |---|---|---|---|
-| **0. Spike (decide a viabilidade)** | Script que abre `claude` e `codex` num painel tmux, captura a tela e roda o classificador sobre ela | Linha de status, esforço e campo vazio reconhecidos nos dois agentes | ½ dia |
+| **0. Spike (decide a viabilidade)** | Script que abre `claude` e `codex` num painel tmux, captura a tela e roda o classificador sobre ela. Parte disto já foi feita em 24/09/2026: as capturas do Codex 0.156.1 e do Claude Code 2.1.282 via `capture-pane` funcionaram | Linha de status, esforço e campo vazio reconhecidos nos dois agentes | ½ dia |
 | **1. Núcleo em Python** | Classificador, planos, catálogo, máquina de estados e códigos de recusa, com os testes do `core_test.m` portados | Mesmos casos passando que no macOS | 2–3 dias |
 | **2. Linux com tmux (CLI)** | `stickshift status`, `stickshift <marcha>` (simulação), `--commit` e atalhos de teclado do tmux (`bind-key`) | Troca de verdade de modelo e esforço no Claude Code e no Codex, testada **neste servidor** | 1–2 dias |
 | **3. WezTerm (inclui Windows nativo)** | Segundo backend com a mesma interface | Troca testada no Linux; no Windows, testada numa máquina Windows | 1–2 dias + teste no Windows |
@@ -75,6 +75,8 @@ Alternativa: Go, se um binário único for prioridade. Custa mais ou menos 30% a
 - **Formato da tela muda entre versões.** É o mesmo risco do macOS. Mitigação: o mesmo processo de requalificação (fixtures + `status` + simulação).
 - **Identidade mais fraca** (sem assinatura de código). Mitigação: hash + caminho da instalação e recusa quando não baterem; fica documentado.
 - **Diálogos de confirmação** do Claude ("Switch model?") dependem de ler a tela certa. O `capture-pane` lê exatamente o painel, então tende a ser mais confiável que a Acessibilidade.
+- **Linha de status do Claude.** O classificador lê o modelo de uma linha `📂 <pasta> · <Modelo>`, que parece vir de um statusline personalizado do autor original. Neste servidor, o statusline é outro (`… Opus 5.5 (1M context)/medium …`). A fase 0 precisa decidir a fonte do modelo: exigir um statusline conhecido, ou ler a confirmação `Set model to …` e o chip de esforço `◐ medium · /effort`, que vêm do Claude Code padrão.
+- **Campos do WezTerm e do kitty** na tabela acima (`get-text`, `send-text`, pid, foco) vêm da documentação e ainda não foram testados; confirmar na fase 0 da fase 3.
 - **Usuário fora de tmux/WezTerm/kitty.** Não é suportado; a ferramenta recusa com um código de motivo claro.
 
 ## Recomendação

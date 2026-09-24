@@ -259,7 +259,12 @@ xcode-select --install</pre></div>
   <div class="card warn">
     <h3>⚠️ Ainda não compilado nem testado num Mac</h3>
     <p>O código foi escrito num servidor Linux, sem o compilador da Apple. Os nomes dos modelos vieram dos
-    programas instalados (Claude Code 2.1.282 e Codex 0.156.1). Antes de usar, num Mac: <code>git checkout catalogo-modelos</code>,
+    programas instalados (Claude Code 2.1.282 e Codex 0.156.1) e foram <strong>conferidos na tela real</strong>
+    via tmux no Linux, que é a mesma interface do macOS. Nessa conferência apareceram duas mudanças do Codex, já
+    corrigidas no branch: o rodapé mostra "GPT-6-Astra" com maiúsculas, e Max/Ultra agora ficam num submenu
+    "More reasoning…". Pontos para checar no Mac: a lista de textos-fantasma do campo do Codex ainda é da
+    versão 0.144.1 (se recusar com <code>DRAFT_PRESENT</code>, basta reextrair) e o modelo do Claude é lido de
+    uma linha de status <code>📂 pasta · Modelo</code>, que parece vir de um statusline personalizado. Antes de usar, num Mac: <code>git checkout catalogo-modelos</code>,
     <code>make test</code>, <code>make matrix</code>, <code>stickshift doctor</code> e <code>stickshift status</code>
     num painel com cada agente. Só depois disso o branch entra no <code>main</code>.</p>
   </div>
