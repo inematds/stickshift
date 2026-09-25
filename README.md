@@ -1,5 +1,7 @@
 # StickShift
 
+**Model & Effort Panel** for Claude Code and Codex · *Painel de Modelo e Esforço* · *Panel de Modelo y Esfuerzo*
+
 A macOS menu-bar gearbox that shifts the AI model and reasoning effort of whichever
 agent, Claude Code or Codex CLI, is running in the terminal pane you're looking at.
 Pull the stick to a gate and the model changes in that pane. Drag the throttle and the

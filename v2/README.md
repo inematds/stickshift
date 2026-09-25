@@ -1,4 +1,6 @@
-# StickShift v2: Linux e WSL, com painel web e chat
+# StickShift v2 — Painel de Modelo e Esforço (Linux e WSL)
+
+*Model & Effort Panel · Panel de Modelo y Esfuerzo*
 
 A versão do StickShift para **Linux e Windows via WSL**. Ela troca o modelo e o esforço do **Claude Code** e do **Codex** que rodam em painéis do **tmux**, pela linha de comando ou por um **painel web**. O painel tem o mesmo câmbio do app de macOS e um **chat nível 1**, que manda prompts para o agente do painel escolhido.
 
